@@ -20,6 +20,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+# Retrives ID of user from the current session
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))

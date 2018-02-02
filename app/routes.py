@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 import pandas as pd
 from sqlalchemy import text
 
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -23,42 +24,49 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # If the user is already logged in redirect them
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
+        # Check that the user exists in the database
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
             return redirect(url_for('login'))
         login_user(user)
+        # Sent them to the page they were trying to access, if it doesn't exist then sent them to the homepage
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('home')
         return redirect(next_page)
     return render_template('login.html', title='Login', form=form)
 
+
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
 
 @app.route('/feedback')
 def feedback():
     df = pd.read_sql('SELECT * FROM user', db.engine)
     f1 = df['attendance'].values
     f2 = df['score'].values
-    X = np.matrix(list(zip(f1, f2)))
-    kmeans = KMeans(n_clusters=2).fit(X)
+    x = np.matrix(list(zip(f1, f2)))
+    kmeans = KMeans(n_clusters=2).fit(x)
     info = session['info']
     if kmeans.predict([info]) == kmeans.labels_[0]:
-        feedback = "You will pass"
+        feedback = "You are on course to pass."
     else:
-        feedback = "You will fail"
+        feedback = "Warning, you are on course to fail."
     return render_template('feedback.html', title='Feedback', feedback=feedback)
+
 
 @app.route('/adduser', methods=['GET', 'POST'])
 def adduser():
+    # If the user is already logged in redirect them
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = AddUser()
