@@ -13,3 +13,8 @@ class AddUser(FlaskForm):
     attendance = IntegerField('Attendance', validators=[DataRequired()])
     score = IntegerField('Score', validators=[DataRequired()])
     submit = SubmitField('Add')
+
+class AddInfo(FlaskForm):
+    attendance = IntegerField('Attendance', validators=[DataRequired()])
+    score = IntegerField('Score', validators=[DataRequired()])
+    submit = SubmitField('Get Feedback!')

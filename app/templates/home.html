@@ -1,5 +1,22 @@
 {% extends "main.html" %}
 {% block content %}
     <h1>Hi, {{ current_user.username }}!</h1>
-    <p><a href="{{ url_for('feedback') }}">Get Feedback!</a></p>
+        <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.attendance.label }}<br>
+            {{ form.attendance(size=32) }}
+            {% for error in form.attendance.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.score.label }}<br>
+            {{ form.score(size=32) }}
+            {% for error in form.score.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
 {% endblock %}

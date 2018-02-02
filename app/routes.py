@@ -1,17 +1,24 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User
-from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddUser
+from flask import redirect, url_for, render_template, flash, request, session
+from app.forms import LoginForm, AddUser, AddInfo
 from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
+import pandas as pd
+from sqlalchemy import text
 
-@app.route('/')
-@app.route('/home')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    return render_template('home.html', title='Home')
+    form = AddInfo()
+    if form.validate_on_submit():
+        info = [form.attendance.data, form.score.data]
+        session['info'] = info
+        return redirect(url_for('feedback'))
+    return render_template('home.html', title='Home', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -38,7 +45,17 @@ def logout():
 
 @app.route('/feedback')
 def feedback():
-    return render_template('feedback.html', title='Feedback')
+    df = pd.read_sql('SELECT * FROM user', db.engine)
+    f1 = df['attendance'].values
+    f2 = df['score'].values
+    X = np.matrix(list(zip(f1, f2)))
+    kmeans = KMeans(n_clusters=2).fit(X)
+    info = session['info']
+    if kmeans.predict([info]) == kmeans.labels_[0]:
+        feedback = "You will pass"
+    else:
+        feedback = "You will fail"
+    return render_template('feedback.html', title='Feedback', feedback=feedback)
 
 @app.route('/adduser', methods=['GET', 'POST'])
 def adduser():
