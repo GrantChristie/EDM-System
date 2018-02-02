@@ -1,9 +1,11 @@
-from app import app
+from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm
+from app.forms import LoginForm, AddUser
 from werkzeug.urls import url_parse
+import numpy as np
+from sklearn.cluster import KMeans
 
 @app.route('/')
 @app.route('/home')
@@ -37,3 +39,17 @@ def logout():
 @app.route('/feedback')
 def feedback():
     return render_template('feedback.html', title='Feedback')
+
+@app.route('/adduser', methods=['GET', 'POST'])
+def adduser():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    form = AddUser()
+    if form.validate_on_submit():
+        user = User(username=form.username.data, attendance=form.attendance.data, score=form.score.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('User added')
+        return redirect(url_for('adduser'))
+    return render_template('adduser.html', title='Add User', form=form)
