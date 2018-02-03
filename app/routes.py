@@ -52,7 +52,7 @@ def logout():
 
 @app.route('/feedback')
 def feedback():
-    df = pd.read_sql('SELECT * FROM user', db.engine)
+    df = pd.read_sql('SELECT * FROM public.user', db.engine)
     """
     f1 = df['attendance'].values
     f2 = df['score'].values
