@@ -14,12 +14,13 @@ from sqlalchemy import text
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
+    user_table = pd.read_sql_table('user', db.engine)
     form = AddInfo()
     if form.validate_on_submit():
         info = [form.attendance.data, form.score.data]
         session['info'] = info
         return redirect(url_for('feedback'))
-    return render_template('home.html', title='Home', form=form)
+    return render_template('home.html', title='Home', form=form, user_table=user_table)
 
 
 @app.route('/login', methods=['GET', 'POST'])
