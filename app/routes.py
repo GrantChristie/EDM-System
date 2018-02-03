@@ -53,6 +53,7 @@ def logout():
 @app.route('/feedback')
 def feedback():
     df = pd.read_sql('SELECT * FROM user', db.engine)
+    print(df)
     f1 = df['attendance'].values
     f2 = df['score'].values
     x = np.matrix(list(zip(f1, f2)))
