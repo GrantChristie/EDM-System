@@ -53,7 +53,7 @@ def logout():
 @app.route('/feedback')
 def feedback():
     df = pd.read_sql('SELECT * FROM "user"', db.engine)
-    """
+
     f1 = df['attendance'].values
     f2 = df['score'].values
     x = np.matrix(list(zip(f1, f2)))
@@ -63,8 +63,8 @@ def feedback():
         feedback = "You are on course to pass."
     else:
         feedback = "Warning, you are on course to fail."
-    """
-    return render_template('feedback.html', title='Feedback', feedback=df)
+
+    return render_template('feedback.html', title='Feedback', feedback=feedback)
 
 
 @app.route('/adduser', methods=['GET', 'POST'])
