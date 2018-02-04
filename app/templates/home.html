@@ -1,7 +1,6 @@
 {% extends "main.html" %}
 {% block content %}
     <h1>Hi, {{ current_user.username }}!</h1>
-    {{ user_table }}
     <form action="" method="post">
         {{ form.hidden_tag() }}
         <p>

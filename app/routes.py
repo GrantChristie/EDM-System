@@ -7,24 +7,23 @@ from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
 import pandas as pd
-from sqlalchemy import text
 
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    user_table = pd.read_sql_table('user', db.engine)
     form = AddInfo()
     if form.validate_on_submit():
         info = [form.attendance.data, form.score.data]
         session['info'] = info
         return redirect(url_for('feedback'))
-    return render_template('home.html', title='Home', form=form, user_table=user_table)
+    return render_template('home.html', title='Home', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    user_table = pd.read_sql_table('user', db.engine)
     # If the user is already logged in redirect them
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -41,7 +40,7 @@ def login():
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('home')
         return redirect(next_page)
-    return render_template('login.html', title='Login', form=form)
+    return render_template('login.html', title='Login', form=form, user_table=user_table)
 
 
 @app.route('/logout')
