@@ -10,6 +10,8 @@ class Student(UserMixin, db.Model):
     f_name = db.Column(db.String(40))
     l_name = db.Column(db.String(40))
     dob = db.Column(db.Date)
+    programme_id = db.Column(db.Integer, db.ForeignKey('programme.id'))
+
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -19,6 +21,15 @@ class Student(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class Programme(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    programme_name = db.Column(db.String(40))
+    students = db.relationship('Student', backref='student', lazy='dynamic')
+
+    def __repr__(self):
+        return '<Programme {}>'.format(self.programme_name)
 
 
 # Retrives ID of student from the current session
