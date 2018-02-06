@@ -9,7 +9,7 @@ class Student(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     f_name = db.Column(db.String(40))
     l_name = db.Column(db.String(40))
-    DOB = db.Column(db.Date)
+    dob = db.Column(db.Date)
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
