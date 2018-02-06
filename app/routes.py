@@ -1,8 +1,8 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User
+from app.models import Student
 from flask import redirect, url_for, render_template, flash, request, session
-from app.forms import LoginForm, AddUser, AddInfo
+from app.forms import LoginForm, AddStudent, AddInfo
 from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
@@ -23,14 +23,14 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    user_table = pd.read_sql_table('user', db.engine)
+    student_table = pd.read_sql_table('student', db.engine)
     # If the user is already logged in redirect them
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
         # Check that the user exists in the database
-        user = User.query.filter_by(username=form.username.data).first()
+        user = Student.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
             return redirect(url_for('login'))
@@ -40,7 +40,7 @@ def login():
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('home')
         return redirect(next_page)
-    return render_template('login.html', title='Login', form=form, user_table=user_table)
+    return render_template('login.html', title='Login', form=form, student_table=student_table)
 
 
 @app.route('/logout')
@@ -51,8 +51,8 @@ def logout():
 
 @app.route('/feedback')
 def feedback():
-    df = pd.read_sql('SELECT * FROM "user"', db.engine)
-
+    df = pd.read_sql('SELECT * FROM "student"', db.engine)
+    """
     f1 = df['attendance'].values
     f2 = df['score'].values
     x = np.matrix(list(zip(f1, f2)))
@@ -62,21 +62,21 @@ def feedback():
         feedback = "You are on course to pass."
     else:
         feedback = "Warning, you are on course to fail."
+    """
+    return render_template('feedback.html', title='Feedback', feedback=df)
 
-    return render_template('feedback.html', title='Feedback', feedback=feedback)
 
-
-@app.route('/adduser', methods=['GET', 'POST'])
-def adduser():
+@app.route('/addstudent', methods=['GET', 'POST'])
+def addstudent():
     # If the user is already logged in redirect them
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-    form = AddUser()
+    form = AddStudent()
     if form.validate_on_submit():
-        user = User(username=form.username.data, attendance=form.attendance.data, score=form.score.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
+        student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data, dob=form.dob.data)
+        student.set_password(form.password.data)
+        db.session.add(student)
         db.session.commit()
-        flash('User added')
-        return redirect(url_for('adduser'))
-    return render_template('adduser.html', title='Add User', form=form)
+        flash('Student added')
+        return redirect(url_for('addstudent'))
+    return render_template('addstudent.html', title='Add Student', form=form)
