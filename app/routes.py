@@ -7,7 +7,7 @@ from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
 import pandas as pd
-
+from sqlalchemy import text
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
@@ -80,3 +80,21 @@ def addstudent():
         flash('Student added')
         return redirect(url_for('addstudent'))
     return render_template('addstudent.html', title='Add Student', form=form)
+
+
+@app.route('/details/<username>')
+@login_required
+def details(username):
+    student = Student.query.filter_by(username=username).first_or_404()
+    # Check if the student is trying to access another student's page
+    if current_user.username != student.username:
+        flash('You do not have permission to view this page')
+        return redirect(url_for('home'))
+    current = current_user.username
+    sql = text('select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username="'+current+'"', db.engine)
+    result = db.engine.execute(sql)
+    names = []
+    for row in result:
+        names.append(row)
+    print(names[0][1])
+    return render_template('details.html', student=student, names=names)
