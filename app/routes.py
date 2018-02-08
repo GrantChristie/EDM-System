@@ -90,11 +90,10 @@ def details(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
-    current = current_user.username
-    sql = text('select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username="'+current+'"', db.engine)
+    current = "'"+current_user.username+"'"
+    sql = text('select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username='+current+'', db.engine)
     result = db.engine.execute(sql)
-    names = []
+    details = []
     for row in result:
-        names.append(row)
-    print(names[0][1])
-    return render_template('details.html', student=student, names=names)
+        details.append(row)
+    return render_template('details.html', student=student, details=details)
