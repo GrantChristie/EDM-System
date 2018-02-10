@@ -32,6 +32,14 @@ class Programme(db.Model):
         return '<Programme {}>'.format(self.programme_name)
 
 
+class Course(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    course_name = db.Column(db.String(40))
+
+    def __repr__(self):
+        return '<Course {}>'.format(self.course_name)
+
+
 # Retrives ID of student from the current session
 @login.user_loader
 def load_user(id):
