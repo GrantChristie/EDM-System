@@ -18,7 +18,6 @@ class Student(UserMixin, db.Model):
     dob = db.Column(db.Date)
     programme_id = db.Column(db.Integer, db.ForeignKey('programme.id'))
 
-
     def __repr__(self):
         return '<User {}>'.format(self.username)
 
@@ -34,9 +33,9 @@ class Programme(db.Model):
     programme_name = db.Column(db.String(40))
     students = db.relationship('Student', backref='student', lazy='dynamic')
     programme_courses = db.relationship('Course',
-                              secondary=programme_courses,
-                              backref=db.backref("programmes", lazy="dynamic"),
-                              )
+                                        secondary=programme_courses,
+                                        backref=db.backref("programmes", lazy="dynamic"),
+                                        )
 
     def __repr__(self):
         return '<Programme {}>'.format(self.programme_name)
@@ -48,6 +47,29 @@ class Course(db.Model):
 
     def __repr__(self):
         return '<Course {}>'.format(self.course_name)
+
+
+class SummativeAssessment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
+    cgs = db.Column(db.Integer)
+    due_date = db.Column(db.Date)
+    submitted = db.Column(db.Integer)
+    contribution = db.Column(db.Float)
+
+    def __repr__(self):
+        return '<Summative Assessment {}>'.format(self.name)
+
+
+class FormativeAssessment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40))
+    cgs = db.Column(db.Integer)
+    due_date = db.Column(db.Date)
+    submitted = db.Column(db.Integer)
+
+    def __repr__(self):
+        return '<Formative Assessment {}>'.format(self.name)
 
 
 # Retrives ID of student from the current session
