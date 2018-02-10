@@ -2,6 +2,12 @@ from app import db, login
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import UserMixin
 
+programme_courses = db.Table('programme_courses',
+                             db.Column("id", db.Integer, primary_key=True),
+                             db.Column('programme_id', db.Integer, db.ForeignKey("programme.id")),
+                             db.Column('course_id', db.Integer, db.ForeignKey("course.id"))
+                             )
+
 
 class Student(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,6 +33,10 @@ class Programme(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     programme_name = db.Column(db.String(40))
     students = db.relationship('Student', backref='student', lazy='dynamic')
+    programme_courses = db.relationship('Course',
+                              secondary=programme_courses,
+                              backref=db.backref("programmes", lazy="dynamic"),
+                              )
 
     def __repr__(self):
         return '<Programme {}>'.format(self.programme_name)
