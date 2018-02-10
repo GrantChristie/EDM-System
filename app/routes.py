@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 import pandas as pd
 from sqlalchemy import text
 
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -73,7 +74,8 @@ def addstudent():
         return redirect(url_for('home'))
     form = AddStudent()
     if form.validate_on_submit():
-        student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data, dob=form.dob.data)
+        student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data,
+                          dob=form.dob.data)
         student.set_password(form.password.data)
         db.session.add(student)
         db.session.commit()
@@ -90,10 +92,18 @@ def details(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
-    current = "'"+current_user.username+"'"
-    sql = text('select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username='+current+'', db.engine)
+    current = "'" + current_user.username + "'"
+    sql = text(
+        'select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username=' + current + '',
+        db.engine)
     result = db.engine.execute(sql)
     details = []
     for row in result:
         details.append(row)
-    return render_template('details.html', student=student, details=details)
+    programme = str(details[0][5])
+    sql = text('select course.id, course.course_name from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id='+programme, db.engine)
+    result = db.engine.execute(sql)
+    courses = []
+    for row in result:
+        courses.append(row)
+    return render_template('details.html', student=student, details=details, courses=courses)

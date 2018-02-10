@@ -9,15 +9,21 @@ programme_courses = db.Table('programme_courses',
                              )
 
 student_formative_assessments = db.Table('student_formative_assessments',
-                                       db.Column("id", db.Integer, primary_key=True),
-                                       db.Column('student_id', db.Integer, db.ForeignKey("student.id")),
-                                       db.Column('formative_assessment_id', db.Integer, db.ForeignKey("formative_assessment.id"))
+                                         db.Column("id", db.Integer, primary_key=True),
+                                         db.Column('student_id', db.Integer, db.ForeignKey("student.id")),
+                                         db.Column('formative_assessment_id', db.Integer,
+                                                   db.ForeignKey("formative_assessment.id")),
+                                         db.Column('cgs', db.Integer),
+                                         db.Column('submitted',db.Integer)
                                          )
 
 student_summative_assessments = db.Table('student_summative_assessments',
-                                       db.Column("id", db.Integer, primary_key=True),
-                                       db.Column('student_id', db.Integer, db.ForeignKey("student.id")),
-                                       db.Column('summative_assessment_id', db.Integer, db.ForeignKey("summative_assessment.id"))
+                                         db.Column("id", db.Integer, primary_key=True),
+                                         db.Column('student_id', db.Integer, db.ForeignKey("student.id")),
+                                         db.Column('summative_assessment_id', db.Integer,
+                                                   db.ForeignKey("summative_assessment.id")),
+                                         db.Column('cgs', db.Integer),
+                                         db.Column('submitted',db.Integer)
                                          )
 
 
@@ -29,14 +35,16 @@ class Student(UserMixin, db.Model):
     l_name = db.Column(db.String(40))
     dob = db.Column(db.Date)
     programme_id = db.Column(db.Integer, db.ForeignKey('programme.id'))
-    student_formative_assessments = db.relationship('formative_assessment',
-                                       secondary=student_formative_assessments,
-                                       backref=db.backref("students", lazy="dynamic"),
-                                       )
-    student_summative_assessments = db.relationship('summative_assessment',
-                                       secondary=student_summative_assessments,
-                                       backref=db.backref("students", lazy="dynamic"),
-                                       )
+    student_formative_assessments = db.relationship('FormativeAssessment',
+                                                    secondary=student_formative_assessments,
+                                                    backref=db.backref("students", lazy="dynamic"),
+                                                    )
+
+    student_summative_assessments = db.relationship('SummativeAssessment',
+                                                    secondary=student_summative_assessments,
+                                                    backref=db.backref("students", lazy="dynamic"),
+                                                    )
+
     def __repr__(self):
         return '<User {}>'.format(self.username)
 
@@ -63,8 +71,8 @@ class Programme(db.Model):
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     course_name = db.Column(db.String(40))
-    formative_assessments = db.relationship('formative_assessment', backref='formative_assessment', lazy='dynamic')
-    summative_assessments = db.relationship('summative_assessment', backref='summative_assessment', lazy='dynamic')
+    formative_assessments = db.relationship('FormativeAssessment', backref='formative_assessment', lazy='dynamic')
+    summative_assessments = db.relationship('SummativeAssessment', backref='summative_assessment', lazy='dynamic')
 
     def __repr__(self):
         return '<Course {}>'.format(self.course_name)
@@ -73,9 +81,7 @@ class Course(db.Model):
 class SummativeAssessment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40))
-    cgs = db.Column(db.Integer)
     due_date = db.Column(db.Date)
-    submitted = db.Column(db.Integer)
     contribution = db.Column(db.Float)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
 
@@ -86,9 +92,7 @@ class SummativeAssessment(db.Model):
 class FormativeAssessment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40))
-    cgs = db.Column(db.Integer)
     due_date = db.Column(db.Date)
-    submitted = db.Column(db.Integer)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
 
     def __repr__(self):
