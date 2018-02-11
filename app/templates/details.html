@@ -5,16 +5,27 @@
     <h1>Details for {{ student.username }}</h1>
     <h3>General Information</h3>
     <p>
-    <ul>Username: {{ details[0][0] }}</ul>
-    <ul>Forename: {{ details[0][1] }}</ul>
-    <ul>Surname: {{ details[0][2] }}</ul>
-    <ul>Date of Birth: {{ details[0][3] }}</ul>
-    <ul>Programme: {{ details[0][4] }}</ul>
+    <ul style="list-style-type:none">
+        <li>Username: {{ details[0][0] }}</li>
+        <li>Forename: {{ details[0][1] }}</li>
+        <li>Surname: {{ details[0][2] }}</li>
+        <li>Date of Birth: {{ details[0][3] }}</li>
+        <li>Programme: {{ details[0][4] }}</li>
+    </ul>
     </p>
     <p>
     <h3>Enrolled Courses</h3>
-    {% for course in courses %}
-        <ul>{{ course.course_name }}</ul>
-    {% endfor %}
+    <ul style="list-style-type:none">
+        {% for course in courses %}
+            <li>{{ course[1] }}</li>
+            <ul>
+            {% for assessment in summative_assessments %}
+                {% if course[0] == assessment[3] %}
+                    <li>Name: {{ assessment[1] }} CGS: {{ assessment[2] }}</li>
+                {% endif %}
+            {% endfor %}
+            </ul>
+        {% endfor %}
+    </ul>
     </p>
 {% endblock %}

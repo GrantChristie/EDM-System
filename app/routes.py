@@ -92,18 +92,29 @@ def details(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
+
     current = "'" + current_user.username + "'"
     sql = text(
-        'select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username=' + current + '',
+        'select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id, student.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username=' + current + '',
         db.engine)
     result = db.engine.execute(sql)
     details = []
-    for row in result:
-        details.append(row)
+    for detail in result:
+        details.append(detail)
+
     programme = str(details[0][5])
+    student_id = str(details[0][7])
     sql = text('select course.id, course.course_name from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id='+programme, db.engine)
     result = db.engine.execute(sql)
     courses = []
-    for row in result:
-        courses.append(row)
-    return render_template('details.html', student=student, details=details, courses=courses)
+    summative_assessments = []
+    for course in result:
+        courses.append(course)
+
+    for course in courses:
+        sql = text('select summative_assessment.id, summative_assessment.name, student_summative_assessments.cgs, summative_assessment.course_id from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id=summative_assessment.id where student_id ='+student_id+' AND summative_assessment.course_id='+str(course[0]),db.engine)
+        result = db.engine.execute(sql)
+        for assessment in result:
+            summative_assessments.append(assessment)
+
+    return render_template('details.html', student=student, details=details, courses=courses, summative_assessments=summative_assessments)
