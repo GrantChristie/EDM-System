@@ -9,12 +9,19 @@ from sklearn.cluster import KMeans
 import pandas as pd
 from sqlalchemy import text
 import matplotlib.pyplot as plt
+import datetime
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    return render_template('home.html', title='Home')
+    time = datetime.datetime.now()
+    sql = text("SELECT formative_assessment.name, formative_assessment.due_date from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id where student_formative_assessments.submitted = 0 and student_formative_assessments.student_id =" + str(current_user.id) +"and formative_assessment.due_date <='"+time.strftime('%Y-%m-%d')+"'",db.engine)
+    result = db.engine.execute(sql)
+    assessments = []
+    for row in result:
+        assessments.append(row)
+    return render_template('home.html', title='Home', time=time, assessments=assessments)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -113,7 +120,7 @@ def details(username):
         details.append(detail)
 
     programme = str(details[0][5])
-    student_id = str(details[0][7])
+    student_id = str(current_user.id)
     sql = text(
         'select course.id, course.course_name from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme,
         db.engine)

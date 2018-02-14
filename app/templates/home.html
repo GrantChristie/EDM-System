@@ -3,5 +3,12 @@
 
 {% block app_content %}
     <h1>Hi, {{ current_user.username }}!</h1>
+    Current Time: {{ time }}<br>
+    Warning the following assessments are overdue:<br>
+    {% for assessment in assessments %}
+        <ul>
+            <li>{{ assessment[0] }} due on {{ assessment[1] }}</li>
+        </ul>
+    {% endfor %}
     <a href="{{ url_for('feedback') }}">feedback</a>
 {% endblock %}
