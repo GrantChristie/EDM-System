@@ -1,30 +1,25 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import Student
-from flask import redirect, url_for, render_template, flash, request, session
-from app.forms import LoginForm, AddStudent, AddInfo
+from flask import redirect, url_for, render_template, flash, request
+from app.forms import LoginForm, AddStudent
 from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
 import pandas as pd
 from sqlalchemy import text
-
+import matplotlib.pyplot as plt
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    form = AddInfo()
-    if form.validate_on_submit():
-        info = [form.attendance.data, form.score.data]
-        session['info'] = info
-        return redirect(url_for('feedback'))
-    return render_template('home.html', title='Home', form=form)
+    return render_template('home.html', title='Home')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    student_table = pd.read_sql_table('student', db.engine)
+    student_table = pd.read_sql('SELECT username from student', db.engine)
     # If the user is already logged in redirect them
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -52,25 +47,40 @@ def logout():
 
 @app.route('/feedback')
 def feedback():
-    df = pd.read_sql('SELECT * FROM "student"', db.engine)
+    # Get all the summed scores excluding the current logged in user
+    df = pd.read_sql(
+        'SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments where student_id <>' + str(
+            current_user.id) + 'group by student_id ;', db.engine)
+    # Get the logged in user's summed scores
+    student_data = pd.read_sql(
+        'SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments where student_id =' + str(
+            current_user.id), db.engine)
+    f1 = df['cgssum'].values
+    f2 = df['submittedsum'].values
+    x = np.array(list(zip(f1, f2)))
+    kmeans = KMeans(n_clusters=3).fit(x)
     """
-    f1 = df['attendance'].values
-    f2 = df['score'].values
-    x = np.matrix(list(zip(f1, f2)))
-    kmeans = KMeans(n_clusters=2).fit(x)
-    info = session['info']
-    if kmeans.predict([info]) == kmeans.labels_[0]:
-        feedback = "You are on course to pass."
-    else:
-        feedback = "Warning, you are on course to fail."
+    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+    plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    plt.show()
     """
-    return render_template('feedback.html', title='Feedback', feedback=df)
+    prediction = kmeans.predict(student_data)
+    # If the predicted group is the same group that the best possible result belongs to that is the top group
+    if prediction == kmeans.predict([[110, 5]]):
+        feedback = "You are in the top group"
+    # If the predicted group is the same group the the worst possible result belongs to that is the bottom group
+    elif prediction == kmeans.predict([[0, 0]]):
+        feedback = "You are in the bottom group"
+    else:  # Otherwise prediction belongs in the middle group
+        feedback = "You are average"
+    return render_template('feedback.html', title='Feedback', feedback=feedback)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 def addstudent():
     # If the user is already logged in redirect them
     if current_user.is_authenticated:
+        flash("You cannot add a user while logged in")
         return redirect(url_for('home'))
     form = AddStudent()
     if form.validate_on_submit():
@@ -104,7 +114,9 @@ def details(username):
 
     programme = str(details[0][5])
     student_id = str(details[0][7])
-    sql = text('select course.id, course.course_name from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id='+programme, db.engine)
+    sql = text(
+        'select course.id, course.course_name from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme,
+        db.engine)
     result = db.engine.execute(sql)
     courses = []
     summative_assessments = []
@@ -112,9 +124,12 @@ def details(username):
         courses.append(course)
 
     for course in courses:
-        sql = text('select summative_assessment.id, summative_assessment.name, student_summative_assessments.cgs, summative_assessment.course_id from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id=summative_assessment.id where student_id ='+student_id+' AND summative_assessment.course_id='+str(course[0]),db.engine)
+        sql = text(
+            'select summative_assessment.id, summative_assessment.name, student_summative_assessments.cgs, summative_assessment.course_id from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id=summative_assessment.id where student_id =' + student_id + ' AND summative_assessment.course_id=' + str(
+                course[0]), db.engine)
         result = db.engine.execute(sql)
         for assessment in result:
             summative_assessments.append(assessment)
 
-    return render_template('details.html', student=student, details=details, courses=courses, summative_assessments=summative_assessments)
+    return render_template('details.html', title='Your Details', student=student, details=details, courses=courses,
+                           summative_assessments=summative_assessments)

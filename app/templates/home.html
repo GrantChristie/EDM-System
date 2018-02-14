@@ -3,9 +3,5 @@
 
 {% block app_content %}
     <h1>Hi, {{ current_user.username }}!</h1>
-    <div class="row">
-        <div class="col-md-4">
-            {{ wtf.quick_form(form) }}
-        </div>
-    </div>
+    <a href="{{ url_for('feedback') }}">feedback</a>
 {% endblock %}

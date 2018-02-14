@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, IntegerField, DateField
+from wtforms import StringField, PasswordField, SubmitField, DateField
 from wtforms.validators import DataRequired
 
 
@@ -16,9 +16,3 @@ class AddStudent(FlaskForm):
     l_name = StringField('Last Name', validators=[DataRequired()])
     dob = DateField('Date of Birth', validators=[DataRequired()])
     submit = SubmitField('Add')
-
-
-class AddInfo(FlaskForm):
-    attendance = IntegerField('Attendance', validators=[DataRequired()])
-    score = IntegerField('Score', validators=[DataRequired()])
-    submit = SubmitField('Get Feedback!')
