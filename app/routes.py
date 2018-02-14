@@ -11,11 +11,12 @@ from sqlalchemy import text
 import matplotlib.pyplot as plt
 import datetime
 
+time = datetime.datetime.now()
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
-    time = datetime.datetime.now()
     sql = text("SELECT formative_assessment.name, formative_assessment.due_date from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id where student_formative_assessments.submitted = 0 and student_formative_assessments.student_id =" + str(current_user.id) +"and formative_assessment.due_date <='"+time.strftime('%Y-%m-%d')+"'",db.engine)
     result = db.engine.execute(sql)
     assessments = []
@@ -56,19 +57,16 @@ def logout():
 def feedback():
     # Get all the summed scores excluding the current logged in user
     df = pd.read_sql(
-        'SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments where student_id <>' + str(
-            current_user.id) + 'group by student_id ;', db.engine)
+        "SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id <>" + str(current_user.id) + " and due_date <='" + time.strftime('%Y-%m-%d') + "'group by student_id", db.engine)
     # Get the logged in user's summed scores
-    student_data = pd.read_sql(
-        'SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments where student_id =' + str(
-            current_user.id), db.engine)
+    student_data = pd.read_sql("SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id =" + str(current_user.id) + " and due_date <='" + time.strftime('%Y-%m-%d') +"'", db.engine)
     f1 = df['cgssum'].values
     f2 = df['submittedsum'].values
     x = np.array(list(zip(f1, f2)))
     kmeans = KMeans(n_clusters=3).fit(x)
     """
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    #plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
     plt.show()
     """
     prediction = kmeans.predict(student_data)
