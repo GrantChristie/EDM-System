@@ -1,8 +1,8 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import Student, Programme
+from app.models import Student, Programme, Course, FormativeAssessment
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddStudent, AddProgramme
+from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment
 from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
@@ -91,7 +91,14 @@ def feedback():
 @login_required
 def addstudent():
     adminCheck(current_user.username)
+    options = []
+    df = pd.read_sql('select * from programme',db.engine)
+    ids = df['id'].values
+    names = df['programme_name'].values
+    for x,y in zip(ids,names):
+        options.append((x,y))
     form = AddStudent()
+    form.programme_id.choices = options
     if form.validate_on_submit():
         student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data,
                           dob=form.dob.data, programme_id=form.programme_id.data)
@@ -101,6 +108,7 @@ def addstudent():
         flash('Student Added')
         return redirect(url_for('addstudent'))
     return render_template('addstudent.html', title='Add Student', form=form)
+
 
 @app.route('/addprogramme', methods=['GET','POST'])
 @login_required
@@ -115,6 +123,19 @@ def addprogramme():
         return redirect(url_for('addprogramme'))
     return render_template('addprogramme.html', title='Add Programme', form=form)
 
+
+@app.route('/addcourse', methods=['GET','POST'])
+@login_required
+def addcourse():
+    adminCheck(current_user.username)
+    form = AddCourse()
+    if form.validate_on_submit():
+        course = Course(course_name=form.course_name.data)
+        db.session.add(course)
+        db.session.commit()
+        flash('Course Added')
+        return redirect(url_for('addcourse'))
+    return render_template('addcourse.html', title='Add Course', form=form)
 
 @app.route('/details/<username>')
 @login_required
@@ -133,7 +154,6 @@ def details(username):
     details = []
     for detail in result:
         details.append(detail)
-
     programme = str(details[0][5])
     student_id = str(current_user.id)
     sql = text(

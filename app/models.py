@@ -69,7 +69,7 @@ class Programme(db.Model):
 
 
 class Course(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     course_name = db.Column(db.String(40))
     formative_assessments = db.relationship('FormativeAssessment', backref='formative_assessment', lazy='dynamic')
     summative_assessments = db.relationship('SummativeAssessment', backref='summative_assessment', lazy='dynamic')
