@@ -1,8 +1,8 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import Student
+from app.models import Student, Programme
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddStudent
+from app.forms import LoginForm, AddStudent, AddProgramme
 from werkzeug.urls import url_parse
 import numpy as np
 from sklearn.cluster import KMeans
@@ -62,13 +62,13 @@ def feedback():
     student_data = pd.read_sql("SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id =" + str(current_user.id) + " and due_date <='" + time.strftime('%Y-%m-%d') +"'", db.engine)
     f1 = df['cgssum'].values
     f2 = df['submittedsum'].values
-    x = np.array(list(zip(f1, f2)))
+    x = np.array(list(zip(f2, f1)))
     kmeans = KMeans(n_clusters=3).fit(x)
-    """
+    #"""
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
     #plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
     plt.show()
-    """
+    #"""
     prediction = kmeans.predict(student_data)
     # If the predicted group is the same group that the best possible result belongs to that is the top group
     if prediction == kmeans.predict([[110, 5]]):
@@ -83,20 +83,27 @@ def feedback():
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 def addstudent():
-    # If the user is already logged in redirect them
-    if current_user.is_authenticated:
-        flash("You cannot add a user while logged in")
-        return redirect(url_for('home'))
     form = AddStudent()
     if form.validate_on_submit():
         student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data,
-                          dob=form.dob.data)
+                          dob=form.dob.data, programme_id=form.programme_id.data)
         student.set_password(form.password.data)
         db.session.add(student)
         db.session.commit()
-        flash('Student added')
+        flash('Student Added')
         return redirect(url_for('addstudent'))
     return render_template('addstudent.html', title='Add Student', form=form)
+
+@app.route('/addprogramme', methods=['GET','POST'])
+def addprogramme():
+    form = AddProgramme()
+    if form.validate_on_submit():
+        programme = Programme(programme_name=form.programme_name.data)
+        db.session.add(programme)
+        db.session.commit()
+        flash('Programme Added')
+        return redirect(url_for('addprogramme'))
+    return render_template('addprogramme.html', title='Add Programme', form=form)
 
 
 @app.route('/details/<username>')

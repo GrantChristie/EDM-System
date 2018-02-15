@@ -28,7 +28,7 @@ student_summative_assessments = db.Table('student_summative_assessments',
 
 
 class Student(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(64), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     f_name = db.Column(db.String(40))
@@ -56,8 +56,8 @@ class Student(UserMixin, db.Model):
 
 
 class Programme(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    programme_name = db.Column(db.String(40))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    programme_name = db.Column(db.String(40), unique=True)
     students = db.relationship('Student', backref='student', lazy='dynamic')
     programme_courses = db.relationship('Course',
                                         secondary=programme_courses,
