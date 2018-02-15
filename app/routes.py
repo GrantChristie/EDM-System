@@ -13,6 +13,12 @@ import datetime
 
 time = datetime.datetime.now()
 
+def adminCheck(user):
+    if user != 'admin':
+        flash("You do not have permission to view this page")
+        redirect(url_for('home'))
+
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -82,7 +88,9 @@ def feedback():
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
+@login_required
 def addstudent():
+    adminCheck(current_user.username)
     form = AddStudent()
     if form.validate_on_submit():
         student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data,
@@ -95,7 +103,9 @@ def addstudent():
     return render_template('addstudent.html', title='Add Student', form=form)
 
 @app.route('/addprogramme', methods=['GET','POST'])
+@login_required
 def addprogramme():
+    adminCheck(current_user.username)
     form = AddProgramme()
     if form.validate_on_submit():
         programme = Programme(programme_name=form.programme_name.data)
