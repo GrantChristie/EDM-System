@@ -17,7 +17,7 @@
     <h3>Enrolled Courses</h3>
     <ul style="list-style-type:none">
         {% for course in courses %}
-            <li>{{ course[1] }}</li>
+            <li><a href="{{ url_for('coursefeedback', course=course.id) }}">{{  course.course_name }}</a> </li>
             <ul>
             {% for assessment in summative_assessments %}
                 {% if course[0] == assessment[3] %}
