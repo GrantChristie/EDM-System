@@ -185,12 +185,10 @@ def addcourse():
 def addformativeassessment():
     admincheck(current_user.username)
     options = []
-    df = pd.read_sql('select course.id, course.course_name, programme.programme_name from course inner join programme_courses on course.id = programme_courses.course_id inner join programme on programme.id = programme_courses.programme_id',db.engine)
+    df = pd.read_sql('select id, course_name from course',db.engine)
     ids = df['id'].values
     course_names = df['course_name'].values
-    programme_names = df['programme_name'].values
-    names = [x[0]+": " + x[1] for x in zip(programme_names, course_names)]
-    for x,y in zip(ids,names):
+    for x,y in zip(ids,course_names):
         options.append((x,y))
     form = AddFormativeAssessment()
     form.course_id.choices = options
@@ -208,12 +206,10 @@ def addformativeassessment():
 def addsummativeassessment():
     admincheck(current_user.username)
     options = []
-    df = pd.read_sql('select course.id, course.course_name, programme.programme_name from course inner join programme_courses on course.id = programme_courses.course_id inner join programme on programme.id = programme_courses.programme_id',db.engine)
+    df = pd.read_sql('select id, course_name from course',db.engine)
     ids = df['id'].values
     course_names = df['course_name'].values
-    programme_names = df['programme_name'].values
-    names = [x[0]+": " + x[1] for x in zip(programme_names, course_names)]
-    for x,y in zip(ids,names):
+    for x,y in zip(ids,course_names):
         options.append((x,y))
     form = AddSummativeAssessment()
     form.course_id.choices = options
