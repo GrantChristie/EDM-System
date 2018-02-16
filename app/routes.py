@@ -1,8 +1,8 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment
+from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment, programme_courses
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment
+from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, AddCourseToProgramme
 from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
@@ -221,3 +221,27 @@ def addsummativeassessment():
         return redirect(url_for('addsummativeassessment'))
     return render_template('admin/addsummativeassessment.html', title='Add Formative Assessment', form=form)
 
+@app.route('/addcoursetoprogramme', methods=['GET','POST'])
+@login_required
+def addcoursetoprogramme():
+    admincheck(current_user.username)
+    programmes = pd.read_sql('select * from programme',db.engine)
+    courses = pd.read_sql('select * from course', db.engine)
+    programme_ids = programmes['id'].values
+    programme_names = programmes['programme_name'].values
+    course_ids = courses['id'].values
+    course_names = courses['course_name'].values
+    form = AddCourseToProgramme()
+    form.programme_id.choices = [(x,y) for x,y in zip(programme_ids,programme_names)]
+    form.course_id.choices = [(x,y) for x,y in zip(course_ids,course_names)]
+    if form.validate_on_submit():
+        programme_id = str(form.programme_id.data)
+        course_id = str(form.course_id.data)
+        exists = pd.read_sql('SELECT EXISTS (SELECT * FROM PROGRAMME_COURSES WHERE PROGRAMME_ID =' + programme_id + ' AND COURSE_ID=' + course_id+')',db.engine)
+        if (exists['exists'][0] == True):
+            flash('Could not add course as course already exists in that programme')
+        else:
+            db.engine.execute(text('INSERT INTO programme_courses(programme_id, course_id) VALUES ('+ programme_id + ',' + course_id+')'))
+            flash('Course added to programme')
+        return redirect(url_for('addcoursetoprogramme'))
+    return render_template('admin/addcoursetoprogramme.html', title='Add Course to Programme', form=form)
