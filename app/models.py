@@ -79,7 +79,7 @@ class Course(db.Model):
 
 
 class SummativeAssessment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40))
     due_date = db.Column(db.Date)
     contribution = db.Column(db.Float)
@@ -90,7 +90,7 @@ class SummativeAssessment(db.Model):
 
 
 class FormativeAssessment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40))
     due_date = db.Column(db.Date)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))

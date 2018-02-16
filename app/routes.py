@@ -1,8 +1,8 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import Student, Programme, Course
+from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse
+from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment
 from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
@@ -150,7 +150,7 @@ def addstudent():
         db.session.commit()
         flash('Student Added')
         return redirect(url_for('addstudent'))
-    return render_template('addstudent.html', title='Add Student', form=form)
+    return render_template('admin/addstudent.html', title='Add Student', form=form)
 
 
 @app.route('/addprogramme', methods=['GET','POST'])
@@ -164,7 +164,7 @@ def addprogramme():
         db.session.commit()
         flash('Programme Added')
         return redirect(url_for('addprogramme'))
-    return render_template('addprogramme.html', title='Add Programme', form=form)
+    return render_template('admin/addprogramme.html', title='Add Programme', form=form)
 
 
 @app.route('/addcourse', methods=['GET','POST'])
@@ -178,5 +178,50 @@ def addcourse():
         db.session.commit()
         flash('Course Added')
         return redirect(url_for('addcourse'))
-    return render_template('addcourse.html', title='Add Course', form=form)
+    return render_template('admin/addcourse.html', title='Add Course', form=form)
+
+@app.route('/addformativeassessment', methods=['GET','POST'])
+@login_required
+def addformativeassessment():
+    admincheck(current_user.username)
+    options = []
+    df = pd.read_sql('select course.id, course.course_name, programme.programme_name from course inner join programme_courses on course.id = programme_courses.course_id inner join programme on programme.id = programme_courses.programme_id',db.engine)
+    ids = df['id'].values
+    course_names = df['course_name'].values
+    programme_names = df['programme_name'].values
+    names = [x[0]+": " + x[1] for x in zip(programme_names, course_names)]
+    for x,y in zip(ids,names):
+        options.append((x,y))
+    form = AddFormativeAssessment()
+    form.course_id.choices = options
+    if form.validate_on_submit():
+        formativeassessment = FormativeAssessment(name=form.name.data, due_date=form.due_date.data, course_id=form.course_id.data)
+        db.session.add(formativeassessment)
+        db.session.commit()
+        flash('Formative Assessment Added')
+        return redirect(url_for('addformativeassessment'))
+    return render_template('admin/addformativeassessment.html', title='Add Formative Assessment', form=form)
+
+
+@app.route('/addsummativeassessment', methods=['GET','POST'])
+@login_required
+def addsummativeassessment():
+    admincheck(current_user.username)
+    options = []
+    df = pd.read_sql('select course.id, course.course_name, programme.programme_name from course inner join programme_courses on course.id = programme_courses.course_id inner join programme on programme.id = programme_courses.programme_id',db.engine)
+    ids = df['id'].values
+    course_names = df['course_name'].values
+    programme_names = df['programme_name'].values
+    names = [x[0]+": " + x[1] for x in zip(programme_names, course_names)]
+    for x,y in zip(ids,names):
+        options.append((x,y))
+    form = AddSummativeAssessment()
+    form.course_id.choices = options
+    if form.validate_on_submit():
+        summativeassessment = SummativeAssessment(name=form.name.data, due_date=form.due_date.data, contribution=form.contribution.data, course_id=form.course_id.data)
+        db.session.add(summativeassessment)
+        db.session.commit()
+        flash('Summative Assessment Added')
+        return redirect(url_for('addsummativeassessment'))
+    return render_template('admin/addsummativeassessment.html', title='Add Formative Assessment', form=form)
 

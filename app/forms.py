@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, DateField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, DateField, SelectField, FloatField
 from wtforms.validators import DataRequired
 
 
@@ -26,4 +26,17 @@ class AddProgramme(FlaskForm):
 
 class AddCourse(FlaskForm):
     course_name = StringField('Course Name', validators=[DataRequired()])
+    submit = SubmitField('Add')
+
+class AddFormativeAssessment(FlaskForm):
+    name = StringField('Assessment Name', validators=[DataRequired()])
+    due_date = DateField('Due Date', validators=[DataRequired()])
+    course_id = SelectField('Course', coerce=int)
+    submit = SubmitField('Add')
+
+class AddSummativeAssessment(FlaskForm):
+    name = StringField('Assessment Name', validators=[DataRequired()])
+    due_date = DateField('Due Date', validators=[DataRequired()])
+    contribution = FloatField('Grade Contribution', validators=[DataRequired()])
+    course_id = SelectField('Course', coerce=int)
     submit = SubmitField('Add')
