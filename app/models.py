@@ -9,7 +9,7 @@ programme_courses = db.Table('programme_courses',
                              )
 
 student_formative_assessments = db.Table('student_formative_assessments',
-                                         db.Column("id", db.Integer, primary_key=True),
+                                         db.Column("id", db.Integer, primary_key=True, autoincrement=True),
                                          db.Column('student_id', db.Integer, db.ForeignKey("student.id")),
                                          db.Column('formative_assessment_id', db.Integer,
                                                    db.ForeignKey("formative_assessment.id")),
@@ -18,7 +18,7 @@ student_formative_assessments = db.Table('student_formative_assessments',
                                          )
 
 student_summative_assessments = db.Table('student_summative_assessments',
-                                         db.Column("id", db.Integer, primary_key=True),
+                                         db.Column("id", db.Integer, primary_key=True, autoincrement=True),
                                          db.Column('student_id', db.Integer, db.ForeignKey("student.id")),
                                          db.Column('summative_assessment_id', db.Integer,
                                                    db.ForeignKey("summative_assessment.id")),
