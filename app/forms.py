@@ -55,3 +55,10 @@ class AddFormativeResult(FlaskForm):
     cgs = IntegerField('CGS')
     submitted = SelectField('Submitted', choices =[(0,'No'),(1,'Yes')], coerce=int)
     submit = SubmitField('Add')
+
+class AddSummativeResult(FlaskForm):
+    student_id = SelectField('Student', coerce=int)
+    summative_assessment_id = SelectField('Summative Assessment', coerce=int)
+    cgs = IntegerField('CGS')
+    submitted = SelectField('Submitted', choices =[(0,'No'),(1,'Yes')], coerce=int)
+    submit = SubmitField('Add')

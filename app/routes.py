@@ -2,7 +2,7 @@ from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, AddCourseToProgramme, AddFormativeResult
+from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, AddCourseToProgramme, AddFormativeResult, AddSummativeResult
 from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
@@ -266,6 +266,39 @@ def addformativeresult():
                     flash('Result added')
                     break
                 else:
-                    flash('User must be admin')
+                    flash('User is not enrolled on that course')
         return redirect(url_for('addformativeresult'))
     return render_template('admin/addformativeresult.html', title='Add Formative Result', form=form)
+
+@app.route('/addsummativeresult', methods=['GET','POST'])
+@login_required
+def addsummativeresult():
+    admincheck(current_user.username)
+    students = pd.read_sql('SELECT * FROM STUDENT', db.engine)
+    summative_assessments = pd.read_sql('SELECT SUMMATIVE_ASSESSMENT.ID, SUMMATIVE_ASSESSMENT.NAME, COURSE.COURSE_NAME FROM SUMMATIVE_ASSESSMENT INNER JOIN COURSE ON SUMMATIVE_ASSESSMENT.COURSE_ID = COURSE.ID',db.engine)
+    student_ids = students['id'].values
+    usernames = students['username'].values
+    summative_assessment_ids = summative_assessments['id'].values
+    summativee_assessment_names = summative_assessments['name'].values
+    course_names = summative_assessments['course_name'].values
+    names = [x[0] + ": " + x[1] for x in zip(course_names, summativee_assessment_names)]
+    form = AddSummativeResult()
+    form.student_id.choices = [(x,y) for x,y in zip(student_ids,usernames)]
+    form.summative_assessment_id.choices = [(x,y) for x,y in zip(summative_assessment_ids,names)]
+    if form.validate_on_submit():
+        student_id = str(form.student_id.data)
+        summative_assessment_id = str(form.summative_assessment_id.data)
+        exists = pd.read_sql('SELECT EXISTS (SELECT * FROM STUDENT_SUMMATIVE_ASSESSMENTS WHERE student_id =' + student_id + ' and summative_assessment_id =' + summative_assessment_id + ')',db.engine)
+        if exists['exists'][0] == True:
+            flash('That user already has a result for that assessment')
+        else:
+            programme_ids = pd.read_sql('SELECT programme_id FROM summative_assessment inner join course on course_id=course.id inner join programme_courses on course.id = programme_courses.course_id  where summative_assessment.id=' + summative_assessment_id,db.engine)['programme_id'].values
+            for programme_id in programme_ids:
+                if pd.read_sql('SELECT EXISTS (SELECT * FROM STUDENT WHERE ID=' + student_id + 'and programme_id=' + str(programme_id) + ')', db.engine)['exists'][0] == True:
+                    db.engine.execute(text('INSERT INTO student_summative_assessments (student_id, summative_assessment_id, cgs, submitted) VALUES ('+student_id + ',' + summative_assessment_id + ',' + str(form.cgs.data) + ',' + str(form.submitted.data) + ')'))
+                    flash('Result added')
+                    break
+                else:
+                    flash('User is not enrolled on that course')
+        return redirect(url_for('addsummativeresult'))
+    return render_template('admin/addsummativeresult.html', title='Add Summative Result', form=form)
