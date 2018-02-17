@@ -5,9 +5,9 @@
     <h1>Hi, {{ current_user.username }}!</h1>
     Current Time: {{ time }}<br>
     {% if not assessments %}
-    You have no overdue assessments
+        You have no overdue assessments
     {% else %}
-    Warning the following assessments are overdue:<br>
+        Warning the following assessments are overdue:<br>
     {% endif %}
     {% for assessment in assessments %}
         <ul>
