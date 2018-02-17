@@ -9,7 +9,7 @@ from sklearn.cluster import KMeans
 from sqlalchemy import text
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pandas as pd
 
 time = datetime.datetime.now()
