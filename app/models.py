@@ -14,7 +14,7 @@ student_formative_assessments = db.Table('student_formative_assessments',
                                          db.Column('formative_assessment_id', db.Integer,
                                                    db.ForeignKey("formative_assessment.id")),
                                          db.Column('cgs', db.Integer),
-                                         db.Column('submitted',db.Integer)
+                                         db.Column('submitted', db.Integer)
                                          )
 
 student_summative_assessments = db.Table('student_summative_assessments',
@@ -23,7 +23,7 @@ student_summative_assessments = db.Table('student_summative_assessments',
                                          db.Column('summative_assessment_id', db.Integer,
                                                    db.ForeignKey("summative_assessment.id")),
                                          db.Column('cgs', db.Integer),
-                                         db.Column('submitted',db.Integer)
+                                         db.Column('submitted', db.Integer)
                                          )
 
 

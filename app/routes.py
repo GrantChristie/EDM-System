@@ -2,7 +2,8 @@ from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment
 from flask import redirect, url_for, render_template, flash, request
-from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, AddCourseToProgramme, AddFormativeResult, AddSummativeResult
+from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, \
+    AddCourseToProgramme, AddFormativeResult, AddSummativeResult
 from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
@@ -25,7 +26,9 @@ def admincheck(user):
 @login_required
 def home():
     # Get student's overdue formative assessments for each course
-    sql = text("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted = 0 and student_formative_assessments.student_id =" + str(current_user.id) +"and formative_assessment.due_date <='"+time.strftime('%Y-%m-%d')+"'",db.engine)
+    sql = text(
+        "SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted = 0 and student_formative_assessments.student_id =" + str(
+            current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
     result = db.engine.execute(sql)
     assessments = []
     for row in result:
@@ -58,7 +61,8 @@ def login():
 @app.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    flash("You are logged out")
+    return redirect(url_for('login'))
 
 
 @app.route('/details/<username>')
@@ -106,18 +110,23 @@ def details(username):
 def coursefeedback(course):
     # Get all the summed scores excluding the current logged in user
     df = pd.read_sql(
-        "SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id <>" + str(current_user.id) + " and due_date <='" + time.strftime('%Y-%m-%d') + "' and formative_assessment.course_id ="+course+"group by student_id", db.engine)
+        "SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id <>" + str(
+            current_user.id) + " and due_date <='" + time.strftime(
+            '%Y-%m-%d') + "' and formative_assessment.course_id =" + course + "group by student_id", db.engine)
     # Get the logged in user's summed scores
-    student_data = pd.read_sql("SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id =" + str(current_user.id) + " and due_date <='" + time.strftime('%Y-%m-%d') +"' and formative_assessment.course_id ="+course, db.engine)
+    student_data = pd.read_sql(
+        "SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id =" + str(
+            current_user.id) + " and due_date <='" + time.strftime(
+            '%Y-%m-%d') + "' and formative_assessment.course_id =" + course, db.engine)
     f1 = df['cgssum'].values
     f2 = df['submittedsum'].values
     x = np.array(list(zip(f2, f1)))
     kmeans = KMeans(n_clusters=3).fit(x)
-    #"""
+    # """
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    #plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
     plt.show()
-    #"""
+    # """
     prediction = kmeans.predict(student_data)
     # If the predicted group is the same group that the best possible result belongs to that is the top group
     if prediction == kmeans.predict([[110, 5]]):
@@ -134,11 +143,11 @@ def coursefeedback(course):
 @login_required
 def addstudent():
     admincheck(current_user.username)
-    df = pd.read_sql('select * from programme',db.engine)
+    df = pd.read_sql('select * from programme', db.engine)
     ids = df['id'].values
     names = df['programme_name'].values
     form = AddStudent()
-    form.programme_id.choices = [(x,y) for x,y in zip(ids,names)]
+    form.programme_id.choices = [(x, y) for x, y in zip(ids, names)]
     if form.validate_on_submit():
         student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data,
                           dob=form.dob.data, programme_id=form.programme_id.data)
@@ -150,7 +159,7 @@ def addstudent():
     return render_template('admin/addstudent.html', title='Add Student', form=form)
 
 
-@app.route('/addprogramme', methods=['GET','POST'])
+@app.route('/addprogramme', methods=['GET', 'POST'])
 @login_required
 def addprogramme():
     admincheck(current_user.username)
@@ -164,7 +173,7 @@ def addprogramme():
     return render_template('admin/addprogramme.html', title='Add Programme', form=form)
 
 
-@app.route('/addcourse', methods=['GET','POST'])
+@app.route('/addcourse', methods=['GET', 'POST'])
 @login_required
 def addcourse():
     admincheck(current_user.username)
@@ -177,17 +186,19 @@ def addcourse():
         return redirect(url_for('addcourse'))
     return render_template('admin/addcourse.html', title='Add Course', form=form)
 
-@app.route('/addformativeassessment', methods=['GET','POST'])
+
+@app.route('/addformativeassessment', methods=['GET', 'POST'])
 @login_required
 def addformativeassessment():
     admincheck(current_user.username)
-    df = pd.read_sql('select id, course_name from course',db.engine)
+    df = pd.read_sql('select id, course_name from course', db.engine)
     ids = df['id'].values
     course_names = df['course_name'].values
     form = AddFormativeAssessment()
-    form.course_id.choices = [(x,y) for x,y in zip(ids,course_names)]
+    form.course_id.choices = [(x, y) for x, y in zip(ids, course_names)]
     if form.validate_on_submit():
-        formativeassessment = FormativeAssessment(name=form.name.data, due_date=form.due_date.data, course_id=form.course_id.data)
+        formativeassessment = FormativeAssessment(name=form.name.data, due_date=form.due_date.data,
+                                                  course_id=form.course_id.data)
         db.session.add(formativeassessment)
         db.session.commit()
         flash('Formative Assessment Added')
@@ -195,54 +206,62 @@ def addformativeassessment():
     return render_template('admin/addformativeassessment.html', title='Add Formative Assessment', form=form)
 
 
-@app.route('/addsummativeassessment', methods=['GET','POST'])
+@app.route('/addsummativeassessment', methods=['GET', 'POST'])
 @login_required
 def addsummativeassessment():
     admincheck(current_user.username)
-    df = pd.read_sql('select id, course_name from course',db.engine)
+    df = pd.read_sql('select id, course_name from course', db.engine)
     ids = df['id'].values
     course_names = df['course_name'].values
     form = AddSummativeAssessment()
-    form.course_id.choices = [(x,y) for x,y in zip(ids,course_names)]
+    form.course_id.choices = [(x, y) for x, y in zip(ids, course_names)]
     if form.validate_on_submit():
-        summativeassessment = SummativeAssessment(name=form.name.data, due_date=form.due_date.data, contribution=form.contribution.data, course_id=form.course_id.data)
+        summativeassessment = SummativeAssessment(name=form.name.data, due_date=form.due_date.data,
+                                                  contribution=form.contribution.data, course_id=form.course_id.data)
         db.session.add(summativeassessment)
         db.session.commit()
         flash('Summative Assessment Added')
         return redirect(url_for('addsummativeassessment'))
     return render_template('admin/addsummativeassessment.html', title='Add Formative Assessment', form=form)
 
-@app.route('/addcoursetoprogramme', methods=['GET','POST'])
+
+@app.route('/addcoursetoprogramme', methods=['GET', 'POST'])
 @login_required
 def addcoursetoprogramme():
     admincheck(current_user.username)
-    programmes = pd.read_sql('select * from programme',db.engine)
+    programmes = pd.read_sql('select * from programme', db.engine)
     courses = pd.read_sql('select * from course', db.engine)
     programme_ids = programmes['id'].values
     programme_names = programmes['programme_name'].values
     course_ids = courses['id'].values
     course_names = courses['course_name'].values
     form = AddCourseToProgramme()
-    form.programme_id.choices = [(x,y) for x,y in zip(programme_ids,programme_names)]
-    form.course_id.choices = [(x,y) for x,y in zip(course_ids,course_names)]
+    form.programme_id.choices = [(x, y) for x, y in zip(programme_ids, programme_names)]
+    form.course_id.choices = [(x, y) for x, y in zip(course_ids, course_names)]
     if form.validate_on_submit():
         programme_id = str(form.programme_id.data)
         course_id = str(form.course_id.data)
-        exists = pd.read_sql('SELECT EXISTS (SELECT * FROM PROGRAMME_COURSES WHERE PROGRAMME_ID =' + programme_id + ' AND COURSE_ID=' + course_id+')',db.engine)
+        exists = pd.read_sql(
+            'SELECT EXISTS (SELECT * FROM PROGRAMME_COURSES WHERE PROGRAMME_ID =' + programme_id + ' AND COURSE_ID=' + course_id + ')',
+            db.engine)
         if (exists['exists'][0] == True):
             flash('Could not add course as course already exists in that programme')
         else:
-            db.engine.execute(text('INSERT INTO programme_courses(programme_id, course_id) VALUES ('+ programme_id + ',' + course_id+')'))
+            db.engine.execute(text(
+                'INSERT INTO programme_courses(programme_id, course_id) VALUES (' + programme_id + ',' + course_id + ')'))
             flash('Course added to programme')
         return redirect(url_for('addcoursetoprogramme'))
     return render_template('admin/addcoursetoprogramme.html', title='Add Course to Programme', form=form)
 
-@app.route('/addformativeresult', methods=['GET','POST'])
+
+@app.route('/addformativeresult', methods=['GET', 'POST'])
 @login_required
 def addformativeresult():
     admincheck(current_user.username)
     students = pd.read_sql('SELECT * FROM STUDENT', db.engine)
-    formative_assessments = pd.read_sql('SELECT FORMATIVE_ASSESSMENT.ID, FORMATIVE_ASSESSMENT.NAME, COURSE.COURSE_NAME FROM FORMATIVE_ASSESSMENT INNER JOIN COURSE ON FORMATIVE_ASSESSMENT.COURSE_ID = COURSE.ID', db.engine)
+    formative_assessments = pd.read_sql(
+        'SELECT FORMATIVE_ASSESSMENT.ID, FORMATIVE_ASSESSMENT.NAME, COURSE.COURSE_NAME FROM FORMATIVE_ASSESSMENT INNER JOIN COURSE ON FORMATIVE_ASSESSMENT.COURSE_ID = COURSE.ID',
+        db.engine)
     student_ids = students['id'].values
     usernames = students['username'].values
     formative_assessment_ids = formative_assessments['id'].values
@@ -250,19 +269,27 @@ def addformativeresult():
     course_names = formative_assessments['course_name'].values
     names = [x[0] + ": " + x[1] for x in zip(course_names, formative_assessment_names)]
     form = AddFormativeResult()
-    form.student_id.choices = [(x,y) for x,y in zip(student_ids,usernames)]
-    form.formative_assessment_id.choices = [(x,y) for x,y in zip(formative_assessment_ids,names)]
+    form.student_id.choices = [(x, y) for x, y in zip(student_ids, usernames)]
+    form.formative_assessment_id.choices = [(x, y) for x, y in zip(formative_assessment_ids, names)]
     if form.validate_on_submit():
         formative_assessment_id = str(form.formative_assessment_id.data)
         student_id = str(form.student_id.data)
-        exists = pd.read_sql('SELECT EXISTS (SELECT * FROM STUDENT_FORMATIVE_ASSESSMENTS WHERE student_id =' + student_id + ' and formative_assessment_id =' + formative_assessment_id + ')',db.engine)
+        exists = pd.read_sql(
+            'SELECT EXISTS (SELECT * FROM STUDENT_FORMATIVE_ASSESSMENTS WHERE student_id =' + student_id + ' and formative_assessment_id =' + formative_assessment_id + ')',
+            db.engine)
         if exists['exists'][0] == True:
             flash('That user already has a result for that assessment')
         else:
-            programme_ids = pd.read_sql('SELECT programme_id FROM formative_assessment inner join course on course_id=course.id inner join programme_courses on course.id = programme_courses.course_id  where formative_assessment.id=' + formative_assessment_id,db.engine)['programme_id'].values
+            programme_ids = pd.read_sql(
+                'SELECT programme_id FROM formative_assessment inner join course on course_id=course.id inner join programme_courses on course.id = programme_courses.course_id  where formative_assessment.id=' + formative_assessment_id,
+                db.engine)['programme_id'].values
             for programme_id in programme_ids:
-                if pd.read_sql('SELECT EXISTS (SELECT * FROM STUDENT WHERE ID=' + student_id + 'and programme_id='+ str(programme_id) +')',db.engine)['exists'][0] == True:
-                    db.engine.execute(text('INSERT INTO student_formative_assessments (student_id, formative_assessment_id, cgs, submitted) VALUES ('+student_id + ',' + formative_assessment_id + ',' + str(form.cgs.data) + ',' + str(form.submitted.data) + ')'))
+                if pd.read_sql(
+                        'SELECT EXISTS (SELECT * FROM STUDENT WHERE ID=' + student_id + 'and programme_id=' + str(
+                                programme_id) + ')', db.engine)['exists'][0] == True:
+                    db.engine.execute(text(
+                        'INSERT INTO student_formative_assessments (student_id, formative_assessment_id, cgs, submitted) VALUES (' + student_id + ',' + formative_assessment_id + ',' + str(
+                            form.cgs.data) + ',' + str(form.submitted.data) + ')'))
                     flash('Result added')
                     break
                 else:
@@ -270,12 +297,15 @@ def addformativeresult():
         return redirect(url_for('addformativeresult'))
     return render_template('admin/addformativeresult.html', title='Add Formative Result', form=form)
 
-@app.route('/addsummativeresult', methods=['GET','POST'])
+
+@app.route('/addsummativeresult', methods=['GET', 'POST'])
 @login_required
 def addsummativeresult():
     admincheck(current_user.username)
     students = pd.read_sql('SELECT * FROM STUDENT', db.engine)
-    summative_assessments = pd.read_sql('SELECT SUMMATIVE_ASSESSMENT.ID, SUMMATIVE_ASSESSMENT.NAME, COURSE.COURSE_NAME FROM SUMMATIVE_ASSESSMENT INNER JOIN COURSE ON SUMMATIVE_ASSESSMENT.COURSE_ID = COURSE.ID',db.engine)
+    summative_assessments = pd.read_sql(
+        'SELECT SUMMATIVE_ASSESSMENT.ID, SUMMATIVE_ASSESSMENT.NAME, COURSE.COURSE_NAME FROM SUMMATIVE_ASSESSMENT INNER JOIN COURSE ON SUMMATIVE_ASSESSMENT.COURSE_ID = COURSE.ID',
+        db.engine)
     student_ids = students['id'].values
     usernames = students['username'].values
     summative_assessment_ids = summative_assessments['id'].values
@@ -283,19 +313,27 @@ def addsummativeresult():
     course_names = summative_assessments['course_name'].values
     names = [x[0] + ": " + x[1] for x in zip(course_names, summativee_assessment_names)]
     form = AddSummativeResult()
-    form.student_id.choices = [(x,y) for x,y in zip(student_ids,usernames)]
-    form.summative_assessment_id.choices = [(x,y) for x,y in zip(summative_assessment_ids,names)]
+    form.student_id.choices = [(x, y) for x, y in zip(student_ids, usernames)]
+    form.summative_assessment_id.choices = [(x, y) for x, y in zip(summative_assessment_ids, names)]
     if form.validate_on_submit():
         student_id = str(form.student_id.data)
         summative_assessment_id = str(form.summative_assessment_id.data)
-        exists = pd.read_sql('SELECT EXISTS (SELECT * FROM STUDENT_SUMMATIVE_ASSESSMENTS WHERE student_id =' + student_id + ' and summative_assessment_id =' + summative_assessment_id + ')',db.engine)
+        exists = pd.read_sql(
+            'SELECT EXISTS (SELECT * FROM STUDENT_SUMMATIVE_ASSESSMENTS WHERE student_id =' + student_id + ' and summative_assessment_id =' + summative_assessment_id + ')',
+            db.engine)
         if exists['exists'][0] == True:
             flash('That user already has a result for that assessment')
         else:
-            programme_ids = pd.read_sql('SELECT programme_id FROM summative_assessment inner join course on course_id=course.id inner join programme_courses on course.id = programme_courses.course_id  where summative_assessment.id=' + summative_assessment_id,db.engine)['programme_id'].values
+            programme_ids = pd.read_sql(
+                'SELECT programme_id FROM summative_assessment inner join course on course_id=course.id inner join programme_courses on course.id = programme_courses.course_id  where summative_assessment.id=' + summative_assessment_id,
+                db.engine)['programme_id'].values
             for programme_id in programme_ids:
-                if pd.read_sql('SELECT EXISTS (SELECT * FROM STUDENT WHERE ID=' + student_id + 'and programme_id=' + str(programme_id) + ')', db.engine)['exists'][0] == True:
-                    db.engine.execute(text('INSERT INTO student_summative_assessments (student_id, summative_assessment_id, cgs, submitted) VALUES ('+student_id + ',' + summative_assessment_id + ',' + str(form.cgs.data) + ',' + str(form.submitted.data) + ')'))
+                if pd.read_sql(
+                        'SELECT EXISTS (SELECT * FROM STUDENT WHERE ID=' + student_id + 'and programme_id=' + str(
+                                programme_id) + ')', db.engine)['exists'][0] == True:
+                    db.engine.execute(text(
+                        'INSERT INTO student_summative_assessments (student_id, summative_assessment_id, cgs, submitted) VALUES (' + student_id + ',' + summative_assessment_id + ',' + str(
+                            form.cgs.data) + ',' + str(form.submitted.data) + ')'))
                     flash('Result added')
                     break
                 else:
