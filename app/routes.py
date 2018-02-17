@@ -123,9 +123,9 @@ def coursefeedback(course):
     x = np.array(list(zip(f2, f1)))
     kmeans = KMeans(n_clusters=3).fit(x)
     # """
-    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+    #plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
     # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
-    plt.show()
+    #plt.show()
     # """
     prediction = kmeans.predict(student_data)
     # If the predicted group is the same group that the best possible result belongs to that is the top group
