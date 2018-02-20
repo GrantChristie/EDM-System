@@ -12,12 +12,9 @@ import numpy as np
 import pandas as pd
 import io
 import base64
-# --------COMMENT OUT FOR HEROKU----------------------
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-# ----------------------------------------------------
-
 
 time = datetime.datetime.now()
 
@@ -130,18 +127,22 @@ def coursefeedback(course):
 
     x = np.array(list(zip(f2, f1)))
     kmeans = KMeans(n_clusters=3).fit(x)
+
     img = io.BytesIO()
+    plt.clf()
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(student_data['submittedsum'].values,student_data['cgssum'].values, 'y+')
+    plt.plot(student_data['submittedsum'].values,student_data['cgssum'].values, 'y*', label='You')
+    plt.xticks(np.arange(min(f2), max(f2)+1, 1))
+    plt.yticks(np.arange(min(f1), max(f1)+1, 10))
     plt.xlabel('Total Submitted')
     plt.ylabel('Total CGS Score')
+    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
     # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
     plt.savefig(img, format='png')
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
 
     prediction = kmeans.predict(student_data)
-
     # If the predicted group is the same group that the best possible result belongs to that is the top group
     if prediction == kmeans.predict([[110, 5]]):
         feedback = "You are in the top group"
