@@ -10,11 +10,14 @@ from sqlalchemy import text
 import datetime
 import numpy as np
 import pandas as pd
-# --------COMMENT OUT FOR HEROKU----------------------
-import matplotlib.pyplot as plt
-# ----------------------------------------------------
 import io
 import base64
+# --------COMMENT OUT FOR HEROKU----------------------
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+# ----------------------------------------------------
+
 
 time = datetime.datetime.now()
 
