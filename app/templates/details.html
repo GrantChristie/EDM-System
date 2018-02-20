@@ -16,16 +16,16 @@
     <p>
     <h3>Enrolled Courses</h3>
     <ul style="list-style-type:none">
-        {% for course in courses %}
-            <li><a href="{{ url_for('coursefeedback', course=course.id) }}">{{ course.course_name }}</a></li>
-            <ul>
-                {% for assessment in summative_assessments %}
-                    {% if course[0] == assessment[3] %}
-                        <li>Name: {{ assessment[1] }} CGS: {{ assessment[2] }}</li>
-                    {% endif %}
-                {% endfor %}
-            </ul>
-        {% endfor %}
+            {% for course in courses %}
+                <li><a href="{{ url_for('coursefeedback', course=course[0]) }}">{{ course[1] }}</a></li>
+                <ul>
+                    {% for assessment in summative_assessments %}
+                        {% if course[0] == assessment[3] %}
+                            <li>Name: {{ assessment[1] }} CGS: {{ assessment[2] }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            {% endfor %}
     </ul>
     </p>
 {% endblock %}

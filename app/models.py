@@ -73,6 +73,7 @@ class Course(db.Model):
     course_name = db.Column(db.String(128))
     level = db.Column(db.Integer)
     credits = db.Column(db.Integer)
+    sub_session = db.Column(db.Integer)
     formative_assessments = db.relationship('FormativeAssessment', backref='formative_assessment', lazy='dynamic')
     summative_assessments = db.relationship('SummativeAssessment', backref='summative_assessment', lazy='dynamic')
 

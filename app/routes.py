@@ -89,25 +89,28 @@ def details(username):
         details.append(detail)
     programme = str(details[0][5])
     student_id = str(current_user.id)
-    sql = text(
-        'select course.id, course.course_name from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme,
+
+    course_table = pd.read_sql('select course.id, course.course_name, course.level from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme,
         db.engine)
-    result = db.engine.execute(sql)
+
     courses = []
     summative_assessments = []
-    for course in result:
+
+    for course in course_table.values:
         courses.append(course)
+
 
     for course in courses:
         sql = text(
-            'select summative_assessment.id, summative_assessment.name, student_summative_assessments.cgs, summative_assessment.course_id from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id=summative_assessment.id where student_id =' + student_id + ' AND summative_assessment.course_id=' + str(
+            'select summative_assessment.id, summative_assessment.name, student_summative_assessments.cgs, summative_assessment.course_id, summative_assessment.contribution from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id=summative_assessment.id where student_id =' + student_id + ' AND summative_assessment.course_id=' + str(
                 course[0]), db.engine)
         result = db.engine.execute(sql)
         for assessment in result:
             summative_assessments.append(assessment)
+    return render_template('details.html', title='Your Details', student=student, details=details, courses=courses,summative_assessments=summative_assessments)
 
-    return render_template('details.html', title='Your Details', student=student, details=details, courses=courses,
-                           summative_assessments=summative_assessments)
+
+
 
 
 @app.route('/coursefeedback/<course>')
