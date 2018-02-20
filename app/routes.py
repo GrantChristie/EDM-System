@@ -9,8 +9,12 @@ from sklearn.cluster import KMeans
 from sqlalchemy import text
 import datetime
 import numpy as np
-#import matplotlib.pyplot as plt
 import pandas as pd
+# --------COMMENT OUT FOR HEROKU----------------------
+import matplotlib.pyplot as plt
+# ----------------------------------------------------
+import io
+import base64
 
 time = datetime.datetime.now()
 
@@ -120,14 +124,21 @@ def coursefeedback(course):
             '%Y-%m-%d') + "' and formative_assessment.course_id =" + course, db.engine)
     f1 = df['cgssum'].values
     f2 = df['submittedsum'].values
+
     x = np.array(list(zip(f2, f1)))
     kmeans = KMeans(n_clusters=3).fit(x)
-    # """
-    #plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+    img = io.BytesIO()
+    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+    plt.plot(student_data['submittedsum'].values,student_data['cgssum'].values, 'y+')
+    plt.xlabel('Total Submitted')
+    plt.ylabel('Total CGS Score')
     # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
-    #plt.show()
-    # """
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+
     prediction = kmeans.predict(student_data)
+
     # If the predicted group is the same group that the best possible result belongs to that is the top group
     if prediction == kmeans.predict([[110, 5]]):
         feedback = "You are in the top group"
@@ -136,7 +147,7 @@ def coursefeedback(course):
         feedback = "You are in the bottom group"
     else:  # Otherwise prediction belongs in the middle group
         feedback = "You are average"
-    return render_template('feedback.html', title='Feedback', feedback=feedback)
+    return render_template('feedback.html', title='Feedback', feedback=feedback, plot_url=plot_url)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])

@@ -2,4 +2,5 @@
 {% block app_content %}
     <h1>Hi, {{ current_user.username }}!</h1>
     <p>{{ feedback }}</p>
+    <p><img src="data:image/png;base64, {{ plot_url }}"></p>
 {% endblock %}
