@@ -26,6 +26,8 @@ class AddProgramme(FlaskForm):
 
 class AddCourse(FlaskForm):
     course_name = StringField('Course Name', validators=[DataRequired()])
+    level = IntegerField('Course Level', validators=[DataRequired()])
+    credits = IntegerField('Course Credits', validators=[DataRequired()])
     submit = SubmitField('Add')
 
 

@@ -195,7 +195,7 @@ def addcourse():
     admincheck(current_user.username)
     form = AddCourse()
     if form.validate_on_submit():
-        course = Course(course_name=form.course_name.data)
+        course = Course(course_name=form.course_name.data, level=form.level.data, credits=form.credits.data)
         db.session.add(course)
         db.session.commit()
         flash('Course Added')
