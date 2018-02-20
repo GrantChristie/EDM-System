@@ -10,6 +10,7 @@ from sqlalchemy import text
 import datetime
 import numpy as np
 import pandas as pd
+
 import io
 import base64
 import matplotlib
@@ -127,6 +128,7 @@ def coursefeedback(course):
 
     x = np.array(list(zip(f2, f1)))
     kmeans = KMeans(n_clusters=3).fit(x)
+    prediction = kmeans.predict([[student_data['submittedsum'].values[0],student_data['cgssum'].values[0]]])
 
     img = io.BytesIO()
     plt.clf()
@@ -142,9 +144,8 @@ def coursefeedback(course):
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
 
-    prediction = kmeans.predict(student_data)
     # If the predicted group is the same group that the best possible result belongs to that is the top group
-    if prediction == kmeans.predict([[110, 5]]):
+    if prediction == kmeans.predict([[5, 110]]):
         feedback = "You are in the top group"
     # If the predicted group is the same group the the worst possible result belongs to that is the bottom group
     elif prediction == kmeans.predict([[0, 0]]):
