@@ -10,7 +10,6 @@ from sqlalchemy import text
 import datetime
 import numpy as np
 import pandas as pd
-
 import io
 import base64
 import matplotlib
@@ -87,10 +86,10 @@ def details(username):
     details = []
     for detail in result:
         details.append(detail)
-    programme = str(details[0][5])
+    programme = str(student.programme_id)
     student_id = str(current_user.id)
 
-    course_table = pd.read_sql('select course.id, course.course_name, course.level from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme,
+    course_table = pd.read_sql('select course.id, course.course_name, course.level, course.sub_session from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme + 'order by course.level, course.sub_session',
         db.engine)
 
     courses = []
@@ -98,7 +97,6 @@ def details(username):
 
     for course in course_table.values:
         courses.append(course)
-
 
     for course in courses:
         sql = text(
@@ -108,9 +106,6 @@ def details(username):
         for assessment in result:
             summative_assessments.append(assessment)
     return render_template('details.html', title='Your Details', student=student, details=details, courses=courses,summative_assessments=summative_assessments)
-
-
-
 
 
 @app.route('/coursefeedback/<course>')
@@ -157,6 +152,60 @@ def coursefeedback(course):
         feedback = "You are average"
     return render_template('feedback.html', title='Feedback', feedback=feedback, plot_url=plot_url)
 
+
+@app.route('/programmefeedback/<username>')
+@login_required
+def programmefeedback(username):
+    student = Student.query.filter_by(username=username).first_or_404()
+    # Check if the student is trying to access another student's page
+    if current_user.username != student.username:
+        flash('You do not have permission to view this page')
+        return redirect(url_for('home'))
+
+    data = pd.read_sql('SELECT level1cgs, level2cgs '
+                       'FROM '
+                       '(SELECT SUM(CGS) as level1cgs, student_summative_assessments.student_id as ks '
+                       'from student_summative_assessments '
+                       'inner join summative_assessment '
+                       'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                       'inner join course '
+                       'on summative_assessment.course_id = course.id '
+                       'inner join programme_courses '
+                       'on course.id = programme_courses.course_id '
+                       'where course.level = 1 and programme_courses.programme_id = 1 '
+                       'group by student_summative_assessments.student_id ) t1 '
+                       'INNER JOIN '
+                       '(SELECT SUM(CGS) as level2cgs, student_summative_assessments.student_id as ks '
+                       'from student_summative_assessments '
+                       'inner join summative_assessment '
+                       'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                       'inner join course '
+                       'on summative_assessment.course_id = course.id '
+                       'inner join programme_courses '
+                       'on course.id = programme_courses.course_id '
+                       'where course.level = 2 and programme_courses.programme_id = 1 '
+                       'group by student_summative_assessments.student_id ) t2 '
+                       'ON t1.ks = t2.ks', db.engine)
+
+    f1 = data['level1cgs'].values
+    f2 = data['level2cgs'].values
+    x = np.array(list(zip(f1, f2)))
+    kmeans = KMeans(n_clusters=3).fit(x)
+
+    img = io.BytesIO()
+    plt.clf()
+    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+    #plt.xticks(np.arange(min(f2), max(f2)+1, 1))
+    #plt.yticks(np.arange(min(f1), max(f1)+1, 10))
+    #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+    # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    plt.xlabel('Level 1 Score')
+    plt.ylabel('Level 2 Score')
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+
+    return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
