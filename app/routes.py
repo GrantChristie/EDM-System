@@ -164,7 +164,7 @@ def programmefeedback(username):
 
     data = pd.read_sql('SELECT level1cgs, level2cgs '
                        'FROM '
-                       '(SELECT SUM(CGS) as level1cgs, student_summative_assessments.student_id as ks '
+                       '(SELECT ROUND(SUM(student_summative_assessments.cgs * summative_assessment.contribution)::integer, 0) as level1cgs, student_summative_assessments.student_id as ks '
                        'from student_summative_assessments '
                        'inner join summative_assessment '
                        'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
@@ -175,7 +175,7 @@ def programmefeedback(username):
                        'where course.level = 1 and programme_courses.programme_id = 1 '
                        'group by student_summative_assessments.student_id ) t1 '
                        'INNER JOIN '
-                       '(SELECT SUM(CGS) as level2cgs, student_summative_assessments.student_id as ks '
+                       '(SELECT ROUND(SUM(student_summative_assessments.cgs * summative_assessment.contribution)::integer, 0) as level2cgs, student_summative_assessments.student_id as ks '
                        'from student_summative_assessments '
                        'inner join summative_assessment '
                        'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
