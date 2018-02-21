@@ -73,6 +73,27 @@ def gradebandcheck(grade):
     else:
         return 'G3'
 
+
+def degreeclassification(grade):
+    if 18.0 <= grade <= 22.0:
+        return 'First Class'
+    elif 17.1 <= grade <= 17.9:
+        return 'Borderline First / Upper Second Class'
+    elif 15.0 <= grade <= 17.0:
+        return 'Upper Second Class'
+    elif 14.1 <= grade <= 14.9:
+        return 'Borderline Upper Second / Lower Second Class'
+    elif 12.0 <= grade <= 14.0:
+        return 'Lower Second Class'
+    elif 11.1 <= grade <= 11.9:
+        return 'Borderline Lower Second / Third Class'
+    elif 9.0 <= grade <= 11.0:
+        return 'Third Class'
+    elif 8.1 <= grade <= 8.9:
+        return 'Borderline Third Class / Fail'
+    else:
+        return 'Fail'
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -310,8 +331,9 @@ def programmefeedback(username):
     for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
         level2_results.append(grade * course_credits / total_level2_credits)
     level2grade = gradebandcheck(sum(level2_results))
+    mock_honours_grade = degreeclassification((sum(level1_results) * 0.3) + (sum(level2_results)*0.7))
     return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
-                           level1grade=level1grade, level2grade=level2grade)
+                           level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
