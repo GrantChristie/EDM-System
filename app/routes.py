@@ -25,6 +25,54 @@ def admincheck(user):
         redirect(url_for('home'))
 
 
+def gradebandcheck(grade):
+    if 21.5 <= grade <= 22.0:
+        return 'A1'
+    elif 20.5 <= grade <= 21.49:
+        return 'A2'
+    elif 19.5 <= grade <= 20.49:
+        return 'A3'
+    elif 18.5 <= grade <= 19.49:
+        return 'A4'
+    elif 17.5 <= grade <= 18.49:
+        return 'A5'
+    elif 16.5 <= grade <= 17.49:
+        return 'B1'
+    elif 15.5 <= grade <= 16.49:
+        return 'B2'
+    elif 14.5 <= grade <= 15.49:
+        return 'B3'
+    elif 13.5 <= grade <= 14.49:
+        return 'C1'
+    elif 12.5 <= grade <= 13.49:
+        return 'C2'
+    elif 11.5 <= grade <= 12.49:
+        return 'C3'
+    elif 10.5 <= grade <= 11.49:
+        return 'D1'
+    elif 9.5 <= grade <= 10.49:
+        return 'D2'
+    elif 8.5 <= grade <= 9.49:
+        return 'D3'
+    elif 7.5 <= grade <= 8.49:
+        return 'E1'
+    elif 6.5 <= grade <= 7.49:
+        return 'E2'
+    elif 5.5 <= grade <= 6.49:
+        return 'E3'
+    elif 4.5 <= grade <= 5.49:
+        return 'F1'
+    elif 3.5 <= grade <= 4.49:
+        return 'F2'
+    elif 2.5 <= grade <= 3.49:
+        return 'F3'
+    elif 1.5 <= grade <= 2.49:
+        return 'G1'
+    elif 0.5 <= grade <= 1.49:
+        return 'G2'
+    else:
+        return 'G3'
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -215,7 +263,7 @@ def programmefeedback(username):
     f1 = data['level1cgs'].values
     f2 = data['level2cgs'].values
     x = np.array(list(zip(f1, f2)))
-    kmeans = KMeans(n_clusters=3).fit(x)
+    kmeans = KMeans(n_clusters=2).fit(x)
 
     img = io.BytesIO()
     plt.clf()
@@ -231,7 +279,39 @@ def programmefeedback(username):
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
 
-    return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url)
+    level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                 'sum(contribution * cgs) as course_grade '
+                                 'from student_summative_assessments '
+                                 'inner JOIN summative_assessment '
+                                 'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                 'inner JOIN course '
+                                 'on summative_assessment.course_id = course.id '
+                                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                 'where programme_courses.programme_id = 1 '
+                                 'AND student_id =' + student_id + 'and course.level = 1 group by course.id',db.engine)
+    total_level1_credits = level_1_scores['credits'].sum()
+    level1_results = []
+    for course_credits, grade in zip(level_1_scores['credits'].values,level_1_scores['course_grade'].values):
+        level1_results.append(grade*course_credits/total_level1_credits)
+    level1grade = gradebandcheck(sum(level1_results))
+
+    level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                 'sum(contribution * cgs) as course_grade '
+                                 'from student_summative_assessments '
+                                 'inner JOIN summative_assessment '
+                                 'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                 'inner JOIN course '
+                                 'on summative_assessment.course_id = course.id '
+                                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                 'where programme_courses.programme_id = 1 '
+                                 'AND student_id =' + student_id + 'and course.level = 2 group by course.id',db.engine)
+    total_level2_credits = level_2_scores['credits'].sum()
+    level2_results = []
+    for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
+        level2_results.append(grade * course_credits / total_level2_credits)
+    level2grade = gradebandcheck(sum(level2_results))
+    return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
+                           level1grade=level1grade, level2grade=level2grade)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
