@@ -230,10 +230,14 @@ def programmefeedback(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
+
     student_id = str(student.id)
     student_list = pd.read_sql("SELECT id FROM student where id <>" + student_id + "and username <> 'admin'",db.engine)
+
     level1grades = []
     level2grades = []
+
+    #start of loop
     for id in student_list['id'].values:
         id = str(id)
         level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
@@ -249,9 +253,14 @@ def programmefeedback(username):
                                      db.engine)
         total_level1_credits = level_1_scores['credits'].sum()
         level1_results = []
+
         for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
             level1_results.append(grade * course_credits / total_level1_credits)
         level1grade = (sum(level1_results))
+
+        # Prevent second sql statement from running if the student has no first year results
+        if level1grade == 0:
+            continue
 
         level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                      'sum(contribution * cgs) as course_grade '
@@ -272,6 +281,7 @@ def programmefeedback(username):
         if level1grade != 0 or level2grade != 0:
             level1grades.append(level1grade)
             level2grades.append(level2grade)
+    #end of loop
 
     level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                  'sum(contribution * cgs) as course_grade '
@@ -283,11 +293,12 @@ def programmefeedback(username):
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
                                  'where programme_courses.programme_id = 1 '
                                  'AND student_id =' + student_id + 'and course.level = 1 group by course.id', db.engine)
+
     total_level1_credits = level_1_scores['credits'].sum()
-    level1_results = []
+    student_l1_results = []
     for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
-        level1_results.append(grade * course_credits / total_level1_credits)
-    level1grade = gradebandcheck(sum(level1_results))
+        student_l1_results.append(grade * course_credits / total_level1_credits)
+    level1grade = gradebandcheck(sum(student_l1_results))
 
     level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                  'sum(contribution * cgs) as course_grade '
@@ -299,12 +310,13 @@ def programmefeedback(username):
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
                                  'where programme_courses.programme_id = 1 '
                                  'AND student_id =' + student_id + 'and course.level = 2 group by course.id', db.engine)
+
     total_level2_credits = level_2_scores['credits'].sum()
-    level2_results = []
+    student_l2_results = []
     for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
-        level2_results.append(grade * course_credits / total_level2_credits)
-    level2grade = gradebandcheck(sum(level2_results))
-    mock_honours_grade = degreeclassification((sum(level1_results) * 0.3) + (sum(level2_results) * 0.7))
+        student_l2_results.append(grade * course_credits / total_level2_credits)
+    level2grade = gradebandcheck(sum(student_l2_results))
+    mock_honours_grade = degreeclassification((sum(student_l1_results) * 0.3) + (sum(student_l2_results) * 0.7))
 
     x = np.array(list(zip(level1grades, level2grades)))
     kmeans = KMeans(n_clusters=5).fit(x)
@@ -312,19 +324,32 @@ def programmefeedback(username):
     img = io.BytesIO()
     plt.clf()
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(sum(level1_results),sum(level2_results) , 'y*', label='You')
+    plt.plot(sum(student_l1_results),sum(student_l2_results) , 'y*', label='You')
     #plt.xticks(np.arange(0, 22+1, 2))
     #plt.yticks(np.arange(0, 22+1, 2))
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-    # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    #plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
     plt.xlabel('Level 1 Grade')
     plt.ylabel('Level 2 Grade')
     plt.savefig(img, format='png')
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
 
+    prediction = kmeans.predict([[sum(student_l1_results),sum(student_l2_results)]])
+    if prediction == kmeans.predict([[max(level1grades),max(level2grades)]]):
+        feedback = "You are in the top performers for both year 1 and year 2, well done!"
+    elif prediction == kmeans.predict([[min(level1grades),max(level2grades)]]):
+        feedback = "You have improved from year 1 and are now one of the best performers in year 2."
+    elif prediction == kmeans.predict([[min(level1grades),min(level2grades)]]):
+        feedback = "You are in the worst performers for both year 1 and year 2."
+    elif prediction == kmeans.predict([[max(level1grades), min(level2grades)]]):
+        feedback = "You were one of the top performers in year 1 but your results have gotten worse compared to your peers."
+    else:
+        feedback = "You are performing averagely compared to your peers"
+
     return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
-                           level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade)
+                           level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
+                           feedback=feedback)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
