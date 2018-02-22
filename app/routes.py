@@ -1,12 +1,13 @@
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment
-from flask import redirect, url_for, render_template, flash, request
+from flask import render_template, request
 from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, \
     AddCourseToProgramme, AddFormativeResult, AddSummativeResult
 from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
+from app.helpers import *
 import datetime
 import numpy as np
 import pandas as pd
@@ -16,83 +17,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+
 time = datetime.datetime.now()
 
-
-def admincheck(user):
-    if user != 'admin':
-        flash("You do not have permission to view this page")
-        redirect(url_for('home'))
-
-
-def gradebandcheck(grade):
-    if 21.5 <= grade <= 22.0:
-        return 'A1'
-    elif 20.5 <= grade <= 21.49:
-        return 'A2'
-    elif 19.5 <= grade <= 20.49:
-        return 'A3'
-    elif 18.5 <= grade <= 19.49:
-        return 'A4'
-    elif 17.5 <= grade <= 18.49:
-        return 'A5'
-    elif 16.5 <= grade <= 17.49:
-        return 'B1'
-    elif 15.5 <= grade <= 16.49:
-        return 'B2'
-    elif 14.5 <= grade <= 15.49:
-        return 'B3'
-    elif 13.5 <= grade <= 14.49:
-        return 'C1'
-    elif 12.5 <= grade <= 13.49:
-        return 'C2'
-    elif 11.5 <= grade <= 12.49:
-        return 'C3'
-    elif 10.5 <= grade <= 11.49:
-        return 'D1'
-    elif 9.5 <= grade <= 10.49:
-        return 'D2'
-    elif 8.5 <= grade <= 9.49:
-        return 'D3'
-    elif 7.5 <= grade <= 8.49:
-        return 'E1'
-    elif 6.5 <= grade <= 7.49:
-        return 'E2'
-    elif 5.5 <= grade <= 6.49:
-        return 'E3'
-    elif 4.5 <= grade <= 5.49:
-        return 'F1'
-    elif 3.5 <= grade <= 4.49:
-        return 'F2'
-    elif 2.5 <= grade <= 3.49:
-        return 'F3'
-    elif 1.5 <= grade <= 2.49:
-        return 'G1'
-    elif 0.5 <= grade <= 1.49:
-        return 'G2'
-    else:
-        return 'G3'
-
-
-def degreeclassification(grade):
-    if 18.0 <= grade <= 22.0:
-        return 'First Class'
-    elif 17.1 <= grade <= 17.9:
-        return 'Borderline First / Upper Second Class'
-    elif 15.0 <= grade <= 17.0:
-        return 'Upper Second Class'
-    elif 14.1 <= grade <= 14.9:
-        return 'Borderline Upper Second / Lower Second Class'
-    elif 12.0 <= grade <= 14.0:
-        return 'Lower Second Class'
-    elif 11.1 <= grade <= 11.9:
-        return 'Borderline Lower Second / Third Class'
-    elif 9.0 <= grade <= 11.0:
-        return 'Third Class'
-    elif 8.1 <= grade <= 8.9:
-        return 'Borderline Third Class / Fail'
-    else:
-        return 'Fail'
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
@@ -232,7 +159,7 @@ def programmefeedback(username):
         return redirect(url_for('home'))
 
     student_id = str(student.id)
-    student_list = pd.read_sql("SELECT id FROM student where id <>" + student_id + "and username <> 'admin'",db.engine)
+    student_list = pd.read_sql("SELECT id FROM student where username <> 'admin'", db.engine)
 
     level1grades = []
     level2grades = []
@@ -255,7 +182,7 @@ def programmefeedback(username):
         level1_results = []
 
         for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
-            level1_results.append(grade * course_credits / total_level1_credits)
+            level1_results.append(calculategpa(grade, course_credits, total_level1_credits))
         level1grade = (sum(level1_results))
 
         # Prevent second sql statement from running if the student has no first year results
@@ -276,7 +203,8 @@ def programmefeedback(username):
         total_level2_credits = level_2_scores['credits'].sum()
         level2_results = []
         for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
-            level2_results.append(grade * course_credits / total_level2_credits)
+            level2_results.append(calculategpa(grade, course_credits, total_level2_credits))
+
         level2grade = (sum(level2_results))
         if level1grade != 0 or level2grade != 0:
             level1grades.append(level1grade)
@@ -296,8 +224,10 @@ def programmefeedback(username):
 
     total_level1_credits = level_1_scores['credits'].sum()
     student_l1_results = []
+
     for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
-        student_l1_results.append(grade * course_credits / total_level1_credits)
+        student_l1_results.append(calculategpa(grade, course_credits, total_level1_credits))
+
     level1grade = gradebandcheck(sum(student_l1_results))
 
     level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
@@ -313,22 +243,23 @@ def programmefeedback(username):
 
     total_level2_credits = level_2_scores['credits'].sum()
     student_l2_results = []
+
     for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
-        student_l2_results.append(grade * course_credits / total_level2_credits)
+        student_l2_results.append(calculategpa(grade, course_credits, total_level2_credits))
+
     level2grade = gradebandcheck(sum(student_l2_results))
     mock_honours_grade = degreeclassification((sum(student_l1_results) * 0.3) + (sum(student_l2_results) * 0.7))
-
     x = np.array(list(zip(level1grades, level2grades)))
     kmeans = KMeans(n_clusters=5).fit(x)
 
     img = io.BytesIO()
     plt.clf()
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(sum(student_l1_results),sum(student_l2_results) , 'y*', label='You')
+    plt.plot(sum(student_l1_results),sum(student_l2_results) , 'ko', label='You', markersize=7)
     #plt.xticks(np.arange(0, 22+1, 2))
     #plt.yticks(np.arange(0, 22+1, 2))
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-    #plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black', marker='+')#REMOVE IN FINAL VERSION
     plt.xlabel('Level 1 Grade')
     plt.ylabel('Level 2 Grade')
     plt.savefig(img, format='png')
