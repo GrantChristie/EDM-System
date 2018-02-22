@@ -231,74 +231,47 @@ def programmefeedback(username):
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
     student_id = str(student.id)
-    data = pd.read_sql('SELECT level1cgs, level2cgs '
-                       'FROM ('
-                       'SELECT ROUND(SUM(student_summative_assessments.cgs * summative_assessment.contribution)::integer, 0) as level1cgs, student_summative_assessments.student_id as ks '
-                       'from student_summative_assessments '
-                       'inner join summative_assessment '
-                       'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                       'inner join course '
-                       'on summative_assessment.course_id = course.id '
-                       'inner join programme_courses '
-                       'on course.id = programme_courses.course_id '
-                       'where course.level = 1 and programme_courses.programme_id = 1 and student_id <>'+student_id +
-                       'group by student_summative_assessments.student_id ) t1 '
-                       'INNER JOIN '
-                       '(SELECT ROUND(SUM(student_summative_assessments.cgs * summative_assessment.contribution)::integer, 0) as level2cgs, student_summative_assessments.student_id as ks '
-                       'from student_summative_assessments '
-                       'inner join summative_assessment '
-                       'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                       'inner join course '
-                       'on summative_assessment.course_id = course.id '
-                       'inner join programme_courses '
-                       'on course.id = programme_courses.course_id '
-                       'where course.level = 2 and programme_courses.programme_id = 1 and student_id <>'+student_id +
-                       'group by student_summative_assessments.student_id ) t2 '
-                       'ON t1.ks = t2.ks', db.engine)
+    student_list = pd.read_sql("SELECT id FROM student where id <>" + student_id + "and username <> 'admin'",db.engine)
+    level1grades = []
+    level2grades = []
+    for id in student_list['id'].values:
+        id = str(id)
+        level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                     'sum(contribution * cgs) as course_grade '
+                                     'from student_summative_assessments '
+                                     'inner JOIN summative_assessment '
+                                     'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                     'inner JOIN course '
+                                     'on summative_assessment.course_id = course.id '
+                                     'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                     'where programme_courses.programme_id = 1 '
+                                     'AND student_id =' + id + 'and course.level = 1 group by course.id',
+                                     db.engine)
+        total_level1_credits = level_1_scores['credits'].sum()
+        level1_results = []
+        for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
+            level1_results.append(grade * course_credits / total_level1_credits)
+        level1grade = (sum(level1_results))
 
-    student_data = pd.read_sql('SELECT level1cgs, level2cgs '
-                               'FROM ('
-                               'SELECT ROUND(SUM(student_summative_assessments.cgs * summative_assessment.contribution)::INTEGER, 0) AS level1cgs, student_summative_assessments.student_id AS ks '
-                               'from student_summative_assessments '
-                               'inner JOIN summative_assessment '
-                               'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                               'inner JOIN course '
-                               'on summative_assessment.course_id = course.id '
-                               'inner JOIN programme_courses '
-                               'on course.id = programme_courses.course_id '
-                               'where course.level = 1 AND programme_courses.programme_id = 1 AND student_id =' + student_id +
-                               'group BY student_summative_assessments.student_id ) t1 '
-                               'INNER JOIN '
-                               '(SELECT ROUND(SUM(student_summative_assessments.cgs * summative_assessment.contribution)::INTEGER, 0) AS level2cgs, student_summative_assessments.student_id AS ks '
-                               'from student_summative_assessments '
-                               'inner JOIN summative_assessment '
-                               'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                               'inner JOIN course '
-                               'on summative_assessment.course_id = course.id '
-                               'inner JOIN programme_courses '
-                               'on course.id = programme_courses.course_id '
-                               'where course.level = 2 AND programme_courses.programme_id = 1 AND student_id =' + student_id +
-                               'group BY student_summative_assessments.student_id ) t2 '
-                               'ON t1.ks = t2.ks', db.engine)
-
-    f1 = data['level1cgs'].values
-    f2 = data['level2cgs'].values
-    x = np.array(list(zip(f1, f2)))
-    kmeans = KMeans(n_clusters=2).fit(x)
-
-    img = io.BytesIO()
-    plt.clf()
-    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(student_data['level1cgs'].values, student_data['level2cgs'].values, 'y*', label='You')
-    #plt.xticks(np.arange(min(f2), max(f2)+1, 1))
-    #plt.yticks(np.arange(min(f1), max(f1)+1, 10))
-    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-    # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
-    plt.xlabel('Level 1 Score')
-    plt.ylabel('Level 2 Score')
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plot_url = base64.b64encode(img.getvalue()).decode()
+        level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                     'sum(contribution * cgs) as course_grade '
+                                     'from student_summative_assessments '
+                                     'inner JOIN summative_assessment '
+                                     'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                     'inner JOIN course '
+                                     'on summative_assessment.course_id = course.id '
+                                     'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                     'where programme_courses.programme_id = 1 '
+                                     'AND student_id =' + id + 'and course.level = 2 group by course.id',
+                                     db.engine)
+        total_level2_credits = level_2_scores['credits'].sum()
+        level2_results = []
+        for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
+            level2_results.append(grade * course_credits / total_level2_credits)
+        level2grade = (sum(level2_results))
+        if level1grade != 0 or level2grade != 0:
+            level1grades.append(level1grade)
+            level2grades.append(level2grade)
 
     level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                  'sum(contribution * cgs) as course_grade '
@@ -309,11 +282,11 @@ def programmefeedback(username):
                                  'on summative_assessment.course_id = course.id '
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
                                  'where programme_courses.programme_id = 1 '
-                                 'AND student_id =' + student_id + 'and course.level = 1 group by course.id',db.engine)
+                                 'AND student_id =' + student_id + 'and course.level = 1 group by course.id', db.engine)
     total_level1_credits = level_1_scores['credits'].sum()
     level1_results = []
-    for course_credits, grade in zip(level_1_scores['credits'].values,level_1_scores['course_grade'].values):
-        level1_results.append(grade*course_credits/total_level1_credits)
+    for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
+        level1_results.append(grade * course_credits / total_level1_credits)
     level1grade = gradebandcheck(sum(level1_results))
 
     level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
@@ -325,13 +298,31 @@ def programmefeedback(username):
                                  'on summative_assessment.course_id = course.id '
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
                                  'where programme_courses.programme_id = 1 '
-                                 'AND student_id =' + student_id + 'and course.level = 2 group by course.id',db.engine)
+                                 'AND student_id =' + student_id + 'and course.level = 2 group by course.id', db.engine)
     total_level2_credits = level_2_scores['credits'].sum()
     level2_results = []
     for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
         level2_results.append(grade * course_credits / total_level2_credits)
     level2grade = gradebandcheck(sum(level2_results))
-    mock_honours_grade = degreeclassification((sum(level1_results) * 0.3) + (sum(level2_results)*0.7))
+    mock_honours_grade = degreeclassification((sum(level1_results) * 0.3) + (sum(level2_results) * 0.7))
+
+    x = np.array(list(zip(level1grades, level2grades)))
+    kmeans = KMeans(n_clusters=5).fit(x)
+
+    img = io.BytesIO()
+    plt.clf()
+    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+    plt.plot(sum(level1_results),sum(level2_results) , 'y*', label='You')
+    #plt.xticks(np.arange(0, 22+1, 2))
+    #plt.yticks(np.arange(0, 22+1, 2))
+    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+    # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
+    plt.xlabel('Level 1 Grade')
+    plt.ylabel('Level 2 Grade')
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+
     return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
                            level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade)
 
