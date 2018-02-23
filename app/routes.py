@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model
+from sklearn.naive_bayes import GaussianNB
 import datetime
 import numpy as np
 import pandas as pd
@@ -272,6 +273,7 @@ def programmefeedback(username):
     plt.savefig(img, format='png')
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
+
     #kmeans end
 
     #linear regression start
@@ -282,6 +284,20 @@ def programmefeedback(username):
     lin.fit(x_training, y_training)
 
     predictedl2 = gradebandcheck(lin.predict(x_test)[0])
+    #linear regression end
+
+    #bayes start
+    y_training=[]
+    for x in level2grades:
+        y_training.append(gradebandcheck(x))
+    clf = GaussianNB()
+    x_training = np.array(all_student_level1_results)
+    x_test = np.array([student_l1_results])
+    clf.fit(x_training, y_training)
+
+    bayes_predictedl2 = (clf.predict(x_test)[0])
+    #bayes end
+
     if predictedl2 > level2grade:
         predicted_text = "You did better than predicted, well done!"
     elif predictedl2 < level2grade:
@@ -303,7 +319,7 @@ def programmefeedback(username):
 
     return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
                            level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
-                           feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text)
+                           feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text, bayes_predictedl2=bayes_predictedl2)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
