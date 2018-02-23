@@ -8,6 +8,7 @@ def admincheck(user):
 
 
 def gradebandcheck(grade):
+    grade = round(grade, 1)
     if 21.5 <= grade <= 22.0:
         return 'A1'
     elif 20.5 <= grade <= 21.49:
@@ -80,3 +81,52 @@ def degreeclassification(grade):
 
 def calculategpa(grade, course_credits, total_credits):
     return grade * course_credits / total_credits
+
+
+def gradetocgs(grade):
+    if grade == 'A1':
+        return 22
+    elif grade == 'A2':
+        return 21
+    elif grade == 'A3':
+        return 20
+    elif grade == 'A4':
+        return 19
+    elif grade == 'A5':
+        return 18
+    elif grade == 'B1':
+        return 17
+    elif grade == 'B2':
+        return 16
+    elif grade == 'B3':
+        return 15
+    elif grade == 'C1':
+        return 14
+    elif grade == 'C2':
+        return 13
+    elif grade == 'C3':
+        return 12
+    elif grade == 'D1':
+        return 11
+    elif grade == 'D2':
+        return 10
+    elif grade == 'D3':
+        return 9
+    elif grade == 'E1':
+        return 8
+    elif grade == 'E2':
+        return 7
+    elif grade == 'E3':
+        return 6
+    elif grade == 'F1':
+        return 5
+    elif grade == 'F2':
+        return 4
+    elif grade == 'F3':
+        return 3
+    elif grade == 'G1':
+        return 2
+    elif grade == 'G2':
+        return 1
+    elif grade == 'G3':
+        return 0

@@ -8,6 +8,7 @@ from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
 from app.helpers import *
+from sklearn import linear_model
 import datetime
 import numpy as np
 import pandas as pd
@@ -163,6 +164,7 @@ def programmefeedback(username):
 
     level1grades = []
     level2grades = []
+    all_student_level1_results = []
 
     #start of loop
     for id in student_list['id'].values:
@@ -209,8 +211,10 @@ def programmefeedback(username):
         if level1grade != 0 or level2grade != 0:
             level1grades.append(level1grade)
             level2grades.append(level2grade)
+            all_student_level1_results.append(level1_results)
     #end of loop
 
+    #logged in student's details
     level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                  'sum(contribution * cgs) as course_grade '
                                  'from student_summative_assessments '
@@ -249,6 +253,9 @@ def programmefeedback(username):
 
     level2grade = gradebandcheck(sum(student_l2_results))
     mock_honours_grade = degreeclassification((sum(student_l1_results) * 0.3) + (sum(student_l2_results) * 0.7))
+    #end of logged in student's details retrieval
+
+    #kmeans start
     x = np.array(list(zip(level1grades, level2grades)))
     kmeans = KMeans(n_clusters=5).fit(x)
 
@@ -265,22 +272,38 @@ def programmefeedback(username):
     plt.savefig(img, format='png')
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode()
+    #kmeans end
 
-    prediction = kmeans.predict([[sum(student_l1_results),sum(student_l2_results)]])
-    if prediction == kmeans.predict([[max(level1grades),max(level2grades)]]):
+    #linear regression start
+    x_training = np.array(all_student_level1_results)
+    y_training = np.array(level2grades)
+    x_test = np.array([student_l1_results])
+    lin = linear_model.LinearRegression()
+    lin.fit(x_training, y_training)
+
+    predictedl2 = gradebandcheck(lin.predict(x_test)[0])
+    if predictedl2 > level2grade:
+        predicted_text = "You did better than predicted, well done!"
+    elif predictedl2 < level2grade:
+        predicted_text = "You did worse than predicted."
+    else:
+        predicted_text = "You performed as predicted."
+
+    kmeans_prediction = kmeans.predict([[sum(student_l1_results),sum(student_l2_results)]])
+    if kmeans_prediction == kmeans.predict([[max(level1grades),max(level2grades)]]):
         feedback = "You are in the top performers for both year 1 and year 2, well done!"
-    elif prediction == kmeans.predict([[min(level1grades),max(level2grades)]]):
-        feedback = "You have improved from year 1 and are now one of the best performers in year 2."
-    elif prediction == kmeans.predict([[min(level1grades),min(level2grades)]]):
+    elif kmeans_prediction == kmeans.predict([[min(level1grades),max(level2grades)]]):
+        feedback = "You have improved from year 1 and are now one of the better performers in year 2."
+    elif kmeans_prediction == kmeans.predict([[min(level1grades),min(level2grades)]]):
         feedback = "You are in the worst performers for both year 1 and year 2."
-    elif prediction == kmeans.predict([[max(level1grades), min(level2grades)]]):
-        feedback = "You were one of the top performers in year 1 but your results have gotten worse compared to your peers."
+    elif kmeans_prediction == kmeans.predict([[max(level1grades), min(level2grades)]]):
+        feedback = "You performed well in year 1 but your results have gotten worse compared to your peers."
     else:
         feedback = "You are performing averagely compared to your peers"
 
     return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
                            level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
-                           feedback=feedback)
+                           feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required

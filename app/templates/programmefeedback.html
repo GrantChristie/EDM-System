@@ -4,8 +4,9 @@
 {% block app_content %}
     <p><img src="data:image/png;base64, {{ plot_url }}"></p>
     Your Level 1 Grade is: {{ level1grade }}<br>
+    Your Predicted Level 2 Grade is {{ predictedl2 }}<br>
     Your Level 2 Grade is: {{ level2grade }}<br>
-    If these two years were your honours years you would have the following final grade degree classification:<br>
-    {{ mock_honours_grade }}<br>
+    {{ predicted_text }}<br>
+    If these two years were your honours years you would have the following final grade degree classification: <b>{{ mock_honours_grade }}</b><br>
     {{ feedback }}
 {% endblock %}
