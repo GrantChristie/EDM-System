@@ -1,5 +1,7 @@
 from flask import redirect, url_for, flash
-
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+import numpy as np
 
 def admincheck(user):
     if user != 'admin':
@@ -130,3 +132,36 @@ def gradetocgs(grade):
         return 1
     elif grade == 'G3':
         return 0
+
+def testbayes(all_student_level1_results, level2grades, clf):
+    y_training=[]
+    y_test = []
+    for x in level2grades[15:]:
+        y_training.append(gradebandcheck(x))
+    for y in level2grades[:5]:
+        y_test.append(gradebandcheck(y))
+    x_training = np.array(all_student_level1_results[15:])
+    x_test = np.array(all_student_level1_results[:5])
+    clf.fit(x_training, y_training)
+    preds = clf.predict(x_test)
+    print(accuracy_score(y_test, preds))
+
+
+def testlinearregression(lin, all_student_level1_results, level2grades):
+    #testing
+    x_training = np.array(all_student_level1_results[15:])
+    x_test = np.array(all_student_level1_results[:5])
+    y_training = level2grades[15:]
+    y_test = level2grades[:5]
+    preds = lin.predict(x_test)
+    preds2 = []
+    for x in preds:
+        x = gradebandcheck(x)
+        preds2.append(x)
+    y_test2 = []
+    for x in y_test:
+        y_test2.append(gradebandcheck(x))
+    print(preds2)
+    print(y_test2)
+    print(accuracy_score(y_test2, preds2))
+    #testing end

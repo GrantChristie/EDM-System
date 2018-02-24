@@ -9,9 +9,7 @@ from sklearn.cluster import KMeans
 from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model
-from sklearn.naive_bayes import GaussianNB
 import datetime
-import numpy as np
 import pandas as pd
 import io
 import base64
@@ -282,8 +280,8 @@ def programmefeedback(username):
     x_test = np.array([student_l1_results])
     lin = linear_model.LinearRegression()
     lin.fit(x_training, y_training)
-
     predictedl2 = gradebandcheck(lin.predict(x_test)[0])
+    testlinearregression(lin, all_student_level1_results, level2grades)
     #linear regression end
 
     #bayes start
@@ -294,8 +292,8 @@ def programmefeedback(username):
     x_training = np.array(all_student_level1_results)
     x_test = np.array([student_l1_results])
     clf.fit(x_training, y_training)
-
     bayes_predictedl2 = (clf.predict(x_test)[0])
+    testbayes(all_student_level1_results,level2grades, clf)
     #bayes end
 
     if predictedl2 > level2grade:
@@ -319,7 +317,8 @@ def programmefeedback(username):
 
     return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
                            level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
-                           feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text, bayes_predictedl2=bayes_predictedl2)
+                           feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text,
+                           bayes_predictedl2=bayes_predictedl2)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
