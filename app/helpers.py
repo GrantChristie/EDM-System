@@ -1,5 +1,4 @@
 from flask import redirect, url_for, flash
-from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score
 import numpy as np
 
@@ -148,11 +147,11 @@ def testbayes(all_student_level1_results, level2grades, clf):
 
 
 def testlinearregression(lin, all_student_level1_results, level2grades):
-    #testing
     x_training = np.array(all_student_level1_results[15:])
     x_test = np.array(all_student_level1_results[:5])
     y_training = level2grades[15:]
     y_test = level2grades[:5]
+    lin.fit(x_training, y_training)
     preds = lin.predict(x_test)
     preds2 = []
     for x in preds:
@@ -161,7 +160,4 @@ def testlinearregression(lin, all_student_level1_results, level2grades):
     y_test2 = []
     for x in y_test:
         y_test2.append(gradebandcheck(x))
-    print(preds2)
-    print(y_test2)
     print(accuracy_score(y_test2, preds2))
-    #testing end

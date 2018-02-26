@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model
+from sklearn.naive_bayes import GaussianNB
 import datetime
 import pandas as pd
 import io
@@ -262,8 +263,8 @@ def programmefeedback(username):
     plt.clf()
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
     plt.plot(sum(student_l1_results),sum(student_l2_results) , 'ko', label='You', markersize=7)
-    #plt.xticks(np.arange(0, 22+1, 2))
-    #plt.yticks(np.arange(0, 22+1, 2))
+    plt.xlim(min(level1grades) - 1, 22)
+    plt.ylim(min(level2grades) - 1, 22)
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
     plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black', marker='+')#REMOVE IN FINAL VERSION
     plt.xlabel('Level 1 Grade')
