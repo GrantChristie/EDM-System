@@ -14,5 +14,4 @@
             <li>{{ assessment[2] }}: {{ assessment[0] }} due on {{ assessment[1] }}</li>
         </ul>
     {% endfor %}
-    <p><a href="{{ url_for('programmefeedback', username=current_user.username) }}">Get feedback for programme</a></p>
 {% endblock %}

@@ -55,8 +55,8 @@ class AddCourseToProgramme(FlaskForm):
 class AddFormativeResult(FlaskForm):
     student_id = SelectField('Student', coerce=int)
     formative_assessment_id = SelectField('Formative Assessment', coerce=int)
-    cgs = IntegerField('CGS')
-    submitted = SelectField('Submitted', choices=[(1, 'Yes'), (0, 'No')], coerce=int)
+    cgs = IntegerField('CGS', default=0)
+    submitted = SelectField('Submitted', choices=[(0, 'No'), (1, 'Yes')], coerce=int)
     submit = SubmitField('Add')
 
 

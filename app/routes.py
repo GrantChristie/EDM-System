@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 
 time = datetime.datetime.now()
-
+#time = datetime.datetime(2014, 9, 27)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
@@ -320,6 +320,34 @@ def programmefeedback(username):
                            level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
                            feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text,
                            bayes_predictedl2=bayes_predictedl2)
+
+
+@app.route('/formativefeedback/<username>')
+@login_required
+def formativefeedback(username):
+    student = Student.query.filter_by(username=username).first_or_404()
+    # Check if the student is trying to access another student's page
+    if current_user.username != student.username:
+        flash('You do not have permission to view this page')
+        return redirect(url_for('home'))
+
+    df = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
+            current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' order by formative_assessment.due_date", db.engine)
+    objects = df['name'].values
+    performance = df['cgs'].values
+    x_pos = np.arange(len(objects))
+    img = io.BytesIO()
+    plt.clf()
+    plt.bar(objects, performance, align='center', alpha=0.5)
+    plt.xticks(x_pos, objects, rotation=60)
+    plt.yticks(np.arange(0,22,2))
+    plt.title(df['course_name'].values[0])
+    plt.tight_layout()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url)
+
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
