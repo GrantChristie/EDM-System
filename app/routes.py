@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 
 time = datetime.datetime.now()
-#time = datetime.datetime(2014, 9, 27)
+#time = datetime.datetime(2014, 11, 27)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
@@ -332,6 +332,7 @@ def formativefeedback(username):
         return redirect(url_for('home'))
     programme = str(student.programme_id)
     plot_url = ""
+    plot_url2 = ""
     courses = pd.read_sql('select course.id, course.course_name, course.level, course.sub_session from course inner join programme_courses on programme_courses.course_id=course.id where programme_courses.programme_id=' + programme + 'order by course.level, course.sub_session',
         db.engine)
     course_ids = courses['id'].values
@@ -340,24 +341,42 @@ def formativefeedback(username):
     form.course_choice.choices = [(x, y) for x, y in zip(course_ids, course_names)]
     if form.validate_on_submit():
         choice = str(form.course_choice.data)
-        print(choice)
         df = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
                 current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
-        objects = df['name'].values
-        performance = df['cgs'].values
-        x_pos = np.arange(len(objects))
-        img = io.BytesIO()
-        plt.clf()
-        plt.bar(objects, performance, align='center', alpha=0.5)
-        plt.xticks(x_pos, objects, rotation=60)
-        plt.yticks(np.arange(0,22,2))
-        plt.title(df['course_name'].values[0])
-        plt.tight_layout()
-        plt.savefig(img, format='png')
-        img.seek(0)
-        plot_url = base64.b64encode(img.getvalue()).decode()
-        return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, form=form)
-    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url ,form=form)
+        if df.empty:
+            flash("No results for that course.")
+        else:
+            objects = df['name'].values
+            performance = df['cgs'].values
+            x_pos = np.arange(len(objects))
+
+            img = io.BytesIO()
+            plt.clf()
+            plt.bar(range(len(objects)), performance, align='center', alpha=0.5)
+            plt.xticks(x_pos, objects, rotation=60)
+            plt.yticks(np.arange(0,22,2))
+            plt.ylabel('CGS Score')
+            plt.title(df['course_name'].values[0] + " Results")
+            plt.tight_layout()
+            plt.savefig(img, format='png')
+            img.seek(0)
+            plot_url = base64.b64encode(img.getvalue()).decode()
+
+            img = io.BytesIO()
+            plt.clf()
+            plt.plot(range(len(objects)), performance, color='g', label="You")
+            plt.xticks(x_pos, objects, rotation=60)
+            plt.yticks(np.arange(0,22,2))
+            plt.ylabel('CGS Score')
+            plt.title(df['course_name'].values[0] + " Results Compared to Peers")
+            plt.legend(bbox_to_anchor=(1, 0), loc="lower right")
+            plt.tight_layout()
+            plt.savefig(img, format='png')
+            img.seek(0)
+            plot_url2=base64.b64encode(img.getvalue()).decode()
+
+            return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2, form=form)
+    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,form=form)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
