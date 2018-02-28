@@ -24,6 +24,7 @@ ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%1
 time = datetime.datetime.now()
 #time = datetime.datetime(2014, 9, 27)
 
+
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
@@ -384,7 +385,7 @@ def formativefeedback(username):
                     classmate_performance = classmates_results['cgs'].values
                     plt.plot(range(len(classmate_objects)), classmate_performance, color='r')
                 plt.xticks(x_pos, objects, rotation=60)
-                plt.yticks(np.arange(0,22,2))
+                plt.yticks(np.arange(0, 22, 2))
                 plt.ylabel('CGS Score')
                 plt.title(df['course_name'].values[0] + " Results Compared to Peers")
                 plt.legend(bbox_to_anchor=(1, 0), loc="lower right")
@@ -395,14 +396,17 @@ def formativefeedback(username):
             else:
                 plot_url2 = ""
             scores = pd.read_sql("SELECT student_id, SUM(cgs) from student_Formative_assessments group by student_id order by sum desc", db.engine)
-            print(scores)
             position = scores.student_id[scores.student_id == current_user.id].index.tolist()[0]+1
             if position != len(scores):
                 html_position = ("You are " + ordinal(position) + " out of " + str(len(scores)) + " classmates")
             else:
                 html_position = ("You are last out of your " + str(len(scores)) + " classmates")
-            return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2, form=form, html_position=html_position)
-    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2, form=form)
+            average_grade = "Your average grade based on your formative results is " + gradebandcheck(sum(df['cgs'].values)/len(df)) + "."
+
+            return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
+                                   form=form, html_position=html_position, average_grade=average_grade)
+    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
+                           form=form)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
