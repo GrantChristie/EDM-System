@@ -12,6 +12,7 @@ from sklearn import linear_model
 from sklearn.naive_bayes import GaussianNB
 import datetime
 import pandas as pd
+import math
 import io
 import base64
 import matplotlib
@@ -19,6 +20,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
+ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
 #time = datetime.datetime(2014, 9, 27)
 
@@ -392,8 +394,15 @@ def formativefeedback(username):
                 plot_url2 = base64.b64encode(img.getvalue()).decode()
             else:
                 plot_url2 = ""
-            return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2, form=form)
-    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,form=form)
+            scores = pd.read_sql("SELECT student_id, SUM(cgs) from student_Formative_assessments group by student_id order by sum desc", db.engine)
+            print(scores)
+            position = scores.student_id[scores.student_id == current_user.id].index.tolist()[0]+1
+            if position != len(scores):
+                html_position = ("You are " + ordinal(position) + " out of " + str(len(scores)) + " classmates")
+            else:
+                html_position = ("You are last out of your " + str(len(scores)) + " classmates")
+            return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2, form=form, html_position=html_position)
+    return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2, form=form)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
