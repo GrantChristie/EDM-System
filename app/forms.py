@@ -66,3 +66,8 @@ class AddSummativeResult(FlaskForm):
     cgs = IntegerField('CGS')
     submitted = SelectField('Submitted', choices=[(0, 'No'), (1, 'Yes')], coerce=int)
     submit = SubmitField('Add')
+
+
+class SelectCourse(FlaskForm):
+    course_choice = SelectField('Choose a course', coerce=int)
+    submit = SubmitField('Select')
