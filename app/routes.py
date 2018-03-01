@@ -352,6 +352,7 @@ def formativefeedback(username):
 
     if form.validate_on_submit():
         choice = str(form.course_choice.data)
+        time = form.dt.data
         df = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
                 current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
 
@@ -379,9 +380,9 @@ def formativefeedback(username):
                 plt.clf()
                 plt.plot(range(len(objects)), performance, color='black')
                 classmate_ids = pd.read_sql("SELECT student_id FROM student_formative_assessments WHERE student_id <> "+str(current_user.id)+" GROUP BY student_id;", db.engine)
-                for id in classmate_ids['student_id'].values:
+                for classmate_id in classmate_ids['student_id'].values:
                     classmates_results = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
-                    id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
+                        classmate_id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
                     classmate_objects = classmates_results['name'].values
                     classmate_performance = classmates_results['cgs'].values
                     if gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "A":
