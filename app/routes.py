@@ -633,4 +633,3 @@ def addsummativeresult():
                     flash('User is not enrolled on that course')
         return redirect(url_for('addsummativeresult'))
     return render_template('admin/addsummativeresult.html', title='Add Summative Result', form=form)
-

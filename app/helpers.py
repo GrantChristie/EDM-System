@@ -2,6 +2,7 @@ from flask import redirect, url_for, flash
 from sklearn.metrics import accuracy_score
 import numpy as np
 
+
 def admincheck(user):
     if user != 'admin':
         flash("You do not have permission to view this page")
@@ -132,8 +133,9 @@ def gradetocgs(grade):
     elif grade == 'G3':
         return 0
 
+
 def testbayes(all_student_level1_results, level2grades, clf):
-    y_training=[]
+    y_training = []
     y_test = []
     for x in level2grades[15:]:
         y_training.append(gradebandcheck(x))
@@ -143,7 +145,7 @@ def testbayes(all_student_level1_results, level2grades, clf):
     x_test = np.array(all_student_level1_results[:5])
     clf.fit(x_training, y_training)
     preds = clf.predict(x_test)
-    #print(accuracy_score(y_test, preds))
+    # print(accuracy_score(y_test, preds))
 
 
 def testlinearregression(lin, all_student_level1_results, level2grades):
@@ -160,4 +162,4 @@ def testlinearregression(lin, all_student_level1_results, level2grades):
     y_test2 = []
     for x in y_test:
         y_test2.append(gradebandcheck(x))
-    #print(accuracy_score(y_test2, preds2))
+    # print(accuracy_score(y_test2, preds2))

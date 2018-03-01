@@ -4,10 +4,12 @@ from wtforms.validators import DataRequired, NumberRange
 from wtforms.fields.html5 import DateField, IntegerField
 import datetime
 
+
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
+
 
 class AddStudent(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -56,7 +58,7 @@ class AddFormativeResult(FlaskForm):
     student_id = SelectField('Student', coerce=int)
     formative_assessment_id = SelectField('Formative Assessment', coerce=int)
     cgs = IntegerField('CGS', default=0, validators=[NumberRange(min=0, max=22)])
-    submitted = SelectField('Submitted', choices=[(1, 'Yes'),(0, 'No')], coerce=int)
+    submitted = SelectField('Submitted', choices=[(1, 'Yes'), (0, 'No')], coerce=int)
     submit = SubmitField('Add')
 
 
@@ -64,7 +66,7 @@ class AddSummativeResult(FlaskForm):
     student_id = SelectField('Student', coerce=int)
     summative_assessment_id = SelectField('Summative Assessment', coerce=int)
     cgs = IntegerField('CGS', default=0, validators=[NumberRange(min=0, max=22)])
-    submitted = SelectField('Submitted', choices= [(1, 'Yes'),(0, 'No')] , coerce=int)
+    submitted = SelectField('Submitted', choices=[(1, 'Yes'), (0, 'No')], coerce=int)
     submit = SubmitField('Add')
 
 

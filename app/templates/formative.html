@@ -3,18 +3,49 @@
 
 {% block app_content %}
     <h1>Formative Feedback</h1>
-        <div class="row">
+    <div class="row">
         <div class="col-md-4">
             {{ wtf.quick_form(form) }}
         </div>
-        </div>
+    </div><br>
+
+
     {% if plot_url != "" %}
-        <p><img src="data:image/png;base64, {{ plot_url }}" ></p>
-        <p>{{ average_grade }}</p>
-    {% endif %}
-    {% if plot_url2 != "" %}
-        <p><img src="data:image/png;base64, {{ plot_url2 }}" ></p>
-        <p>{{ html_position }}</p>
+
+        <div id="barDIV">
+            <p><img src="data:image/png;base64, {{ plot_url }}"></p>
+            <p>{{ average_grade }}</p>
+        </div>
+        <button onclick="toggleBAR()">Toggle Bar Chart</button>
     {% endif %}
 
+    {% if plot_url2 != "" %}
+        <div id = "plotDIV">
+        <p><img src="data:image/png;base64, {{ plot_url2 }}"></p>
+        <p>{{ html_position }}</p>
+        </div>
+        <button onclick="togglePLOT()">Toggle Line Chart</button>
+    {% endif %}
+
+    <script>
+        function toggleBAR() {
+            var x = document.getElementById("barDIV");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }
+
+        function togglePLOT() {
+            var x = document.getElementById("plotDIV");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }
+    </script>
+
 {% endblock %}
+
