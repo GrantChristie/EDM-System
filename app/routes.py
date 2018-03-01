@@ -18,6 +18,7 @@ import base64
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
@@ -376,21 +377,42 @@ def formativefeedback(username):
             if len(df) > 1:
                 img = io.BytesIO()
                 plt.clf()
-                plt.plot(range(len(objects)), performance, color='g', label="You")
+                plt.plot(range(len(objects)), performance, color='black')
                 classmate_ids = pd.read_sql("SELECT student_id FROM student_formative_assessments WHERE student_id <> "+str(current_user.id)+" GROUP BY student_id;", db.engine)
                 for id in classmate_ids['student_id'].values:
                     classmates_results = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
                     id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
                     classmate_objects = classmates_results['name'].values
                     classmate_performance = classmates_results['cgs'].values
-                    plt.plot(range(len(classmate_objects)), classmate_performance, color='r')
+                    if gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "A":
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='pink')
+                    elif gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "B":
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='purple')
+                    elif  gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "C":
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='blue')
+                    elif gradebandcheck(sum(classmates_results['cgs'].values) / len(classmates_results))[0] == "D":
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='green')
+                    elif gradebandcheck(sum(classmates_results['cgs'].values) / len(classmates_results))[0] == "E":
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='yellow')
+                    elif gradebandcheck(sum(classmates_results['cgs'].values) / len(classmates_results))[0] == "F":
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='orange')
+                    else:
+                        plt.plot(range(len(classmate_objects)), classmate_performance, color='red')
                 plt.xticks(x_pos, objects, rotation=60)
                 plt.yticks(np.arange(0, 22, 2))
                 plt.ylabel('CGS Score')
                 plt.title(df['course_name'].values[0] + " Results Compared to Peers")
-                plt.legend(bbox_to_anchor=(1, 0), loc="lower right")
+                you_patch = mpatches.Patch(color='black', label='You')
+                a_patch = mpatches.Patch(color='pink', label='A Band')
+                b_patch = mpatches.Patch(color='purple', label='B Band')
+                c_patch = mpatches.Patch(color='blue', label='C Band')
+                d_patch = mpatches.Patch(color='green', label='D Band')
+                e_patch = mpatches.Patch(color='yellow', label='E Band')
+                f_patch = mpatches.Patch(color='orange', label='F Band')
+                g_patch = mpatches.Patch(color='red', label='G Band')
+                legend = plt.legend(loc='upper center', bbox_to_anchor=(1.1, 0.8), handles=[you_patch, a_patch, b_patch, c_patch, d_patch, e_patch, f_patch, g_patch])
                 plt.tight_layout()
-                plt.savefig(img, format='png')
+                plt.savefig(img, bbox_extra_artists=(legend,), bbox_inches='tight', format='png')
                 img.seek(0)
                 plot_url2 = base64.b64encode(img.getvalue()).decode()
             else:
