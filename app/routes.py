@@ -109,6 +109,7 @@ def details(username):
     return render_template('details.html', title='Your Details', student=student, details=details, courses=courses,summative_assessments=summative_assessments)
 
 
+#NO LONGER USED
 @app.route('/coursefeedback/<course>')
 @login_required
 def coursefeedback(course):
@@ -164,7 +165,7 @@ def programmefeedback(username):
         return redirect(url_for('home'))
 
     student_id = str(student.id)
-    student_list = pd.read_sql("SELECT id FROM student where username <> 'admin'", db.engine)
+    student_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(current_user.year), db.engine)
 
     level1grades = []
     level2grades = []
@@ -340,10 +341,8 @@ def formativefeedback(username):
     plot_url2 = ""
     courses = pd.read_sql('select course.id, course.course_name, course.level, course.sub_session '
                           'from course inner join programme_courses on programme_courses.course_id=course.id '
-                          'where programme_courses.programme_id=' + programme + ' order by '
-                                                                                'course.level, course.sub_session',
-                          db.engine)
-
+                          'where programme_courses.programme_id=' + programme + ' and level <= ' + str(current_user.year)
+                          + 'order by course.level, course.sub_session', db.engine)
     course_ids = courses['id'].values
     course_names = courses['course_name'].values
 
@@ -381,8 +380,19 @@ def formativefeedback(username):
                 plt.plot(range(len(objects)), performance, color='black')
                 classmate_ids = pd.read_sql("SELECT student_id FROM student_formative_assessments WHERE student_id <> "+str(current_user.id)+" GROUP BY student_id;", db.engine)
                 for classmate_id in classmate_ids['student_id'].values:
-                    classmates_results = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
-                        classmate_id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
+                    classmates_results = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs, student.year "
+                                                     "from formative_assessment "
+                                                     "inner join student_formative_assessments "
+                                                     "on student_formative_assessments.formative_assessment_id = formative_assessment.id "
+                                                     "inner join course "
+                                                     "on formative_assessment.course_id = course.id "
+                                                     "inner join student "
+                                                     "on student_formative_assessments.student_id = student.id "
+                                                     "where student_formative_assessments.student_id =" + str(classmate_id) +
+                                                     " and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') +
+                                                     "' and course.id =" + choice +
+                                                     " and student.year = " + str(current_user.year) +
+                                                     " order by formative_assessment.due_date", db.engine)
                     classmate_objects = classmates_results['name'].values
                     classmate_performance = classmates_results['cgs'].values
                     if gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "A":
@@ -418,7 +428,12 @@ def formativefeedback(username):
                 plot_url2 = base64.b64encode(img.getvalue()).decode()
             else:
                 plot_url2 = ""
-            scores = pd.read_sql("SELECT student_id, SUM(cgs) from student_Formative_assessments group by student_id order by sum desc", db.engine)
+            scores = pd.read_sql("SELECT student_id, SUM(cgs) "
+                                 "from student_Formative_assessments "
+                                 "inner join student "
+                                 "on student_Formative_assessments.student_id = student.id "
+                                 "where student.year =" + str(current_user.year) +
+                                 " group by student_id order by sum desc", db.engine)
             position = scores.student_id[scores.student_id == current_user.id].index.tolist()[0]+1
             if position != len(scores):
                 html_position = ("You are " + ordinal(position) + " out of " + str(len(scores)) + " classmates")
@@ -443,7 +458,7 @@ def addstudent():
     form.programme_id.choices = [(x, y) for x, y in zip(ids, names)]
     if form.validate_on_submit():
         student = Student(username=form.username.data, f_name=form.f_name.data, l_name=form.l_name.data,
-                          dob=form.dob.data, programme_id=form.programme_id.data)
+                          dob=form.dob.data, programme_id=form.programme_id.data, year=form.year.data)
         student.set_password(form.password.data)
         db.session.add(student)
         db.session.commit()

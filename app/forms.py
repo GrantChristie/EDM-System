@@ -17,6 +17,7 @@ class AddStudent(FlaskForm):
     f_name = StringField('First Name', validators=[DataRequired()])
     l_name = StringField('Last Name', validators=[DataRequired()])
     dob = DateField('Date of Birth', validators=[DataRequired()])
+    year = IntegerField('Student Year', validators=[DataRequired()], default=1)
     programme_id = SelectField('Programme', coerce=int)
     submit = SubmitField('Add')
 
