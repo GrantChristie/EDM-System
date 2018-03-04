@@ -14,4 +14,9 @@
             <li>{{ assessment[2] }}: {{ assessment[0] }} due on {{ assessment[1] }}</li>
         </ul>
     {% endfor %}
+    {% if current_user.username != 'admin' %}
+        <p>
+            <a href="{{ url_for('subsessionfeedback', username=current_user.username, level = current_user.year, session = 1) }}">Sub
+                Session 1 Feedback</a></p>
+    {% endif %}
 {% endblock %}

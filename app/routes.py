@@ -165,7 +165,7 @@ def programmefeedback(username):
         return redirect(url_for('home'))
 
     student_id = str(student.id)
-    student_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(current_user.year), db.engine)
+    student_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
 
     level1grades = []
     level2grades = []
@@ -182,7 +182,6 @@ def programmefeedback(username):
                                      'inner JOIN course '
                                      'on summative_assessment.course_id = course.id '
                                      'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                     'where programme_courses.programme_id = 1 '
                                      'AND student_id =' + id + 'and course.level = 1 group by course.id',
                                      db.engine)
         total_level1_credits = level_1_scores['credits'].sum()
@@ -204,9 +203,9 @@ def programmefeedback(username):
                                      'inner JOIN course '
                                      'on summative_assessment.course_id = course.id '
                                      'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                     'where programme_courses.programme_id = 1 '
                                      'AND student_id =' + id + 'and course.level = 2 group by course.id',
                                      db.engine)
+
         total_level2_credits = level_2_scores['credits'].sum()
         level2_results = []
         for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
@@ -228,7 +227,6 @@ def programmefeedback(username):
                                  'inner JOIN course '
                                  'on summative_assessment.course_id = course.id '
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                 'where programme_courses.programme_id = 1 '
                                  'AND student_id =' + student_id + 'and course.level = 1 group by course.id', db.engine)
 
     total_level1_credits = level_1_scores['credits'].sum()
@@ -247,7 +245,6 @@ def programmefeedback(username):
                                  'inner JOIN course '
                                  'on summative_assessment.course_id = course.id '
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                 'where programme_courses.programme_id = 1 '
                                  'AND student_id =' + student_id + 'and course.level = 2 group by course.id', db.engine)
 
     total_level2_credits = level_2_scores['credits'].sum()
@@ -399,7 +396,7 @@ def formativefeedback(username):
                         plt.plot(range(len(classmate_objects)), classmate_performance, color='pink')
                     elif gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "B":
                         plt.plot(range(len(classmate_objects)), classmate_performance, color='purple')
-                    elif  gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "C":
+                    elif gradebandcheck(sum(classmates_results['cgs'].values)/len(classmates_results))[0] == "C":
                         plt.plot(range(len(classmate_objects)), classmate_performance, color='blue')
                     elif gradebandcheck(sum(classmates_results['cgs'].values) / len(classmates_results))[0] == "D":
                         plt.plot(range(len(classmate_objects)), classmate_performance, color='green')
@@ -432,8 +429,12 @@ def formativefeedback(username):
                                  "from student_Formative_assessments "
                                  "inner join student "
                                  "on student_Formative_assessments.student_id = student.id "
+                                 "inner join formative_assessment "
+                                 "on student_Formative_assessments.formative_assessment_id = formative_assessment.id "
                                  "where student.year =" + str(current_user.year) +
-                                 " group by student_id order by sum desc", db.engine)
+                                 " and formative_assessment.course_id = " + choice +
+                                 " and formative_assessment.due_date <= '" + time.strftime('%Y-%m-%d') +
+                                 "' group by student_id order by sum desc", db.engine)
             position = scores.student_id[scores.student_id == current_user.id].index.tolist()[0]+1
             if position != len(scores):
                 html_position = ("You are " + ordinal(position) + " out of " + str(len(scores)) + " classmates")
@@ -446,6 +447,37 @@ def formativefeedback(username):
     return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
                            form=form)
 
+
+@app.route('/subsessionfeedback/<username>/<level><session>/')
+@login_required
+def subsessionfeedback(username, level, session):
+    student = Student.query.filter_by(username=username).first_or_404()
+    # Check if the student is trying to access another student's page
+    if current_user.username != student.username:
+        flash('You do not have permission to view this page')
+        return redirect(url_for('home'))
+    if int(level) > current_user.year:
+        flash("You have no data for that year.")
+        return redirect(url_for("home"))
+    elif int(session) > 2:
+        flash("Sub Session does not exist.")
+        return redirect(url_for("home"))
+
+    session1_student_results = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                 'sum(contribution * cgs) as course_grade '
+                                 'from student_summative_assessments '
+                                 'inner JOIN summative_assessment '
+                                 'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                 'inner JOIN course '
+                                 'on summative_assessment.course_id = course.id '
+                                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                 'AND student_id = '+ str(current_user.id) + ' and course.level = '+str(level)+' and course.sub_session = '+str(session)+' group by course.id',db.engine)
+
+    past_students = pd.read_sql("SELECT id FROM student where username <> 'admin' "
+                                "and year > " + str(current_user.year) +
+                                'and programme_id =' + str(current_user.programme_id),db.engine)
+
+    return render_template('subsessionfeedback.html', title='Sub-Session Feedback', level=level, session=session)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
