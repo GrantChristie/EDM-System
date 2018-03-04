@@ -80,13 +80,11 @@ def details(username):
         return redirect(url_for('home'))
 
     current = "'" + current_user.username + "'"
-    sql = text(
-        'select student.username, student.f_name, student.l_name, student.dob, programme.programme_name, student.programme_id, programme.id, student.id from "student" INNER JOIN programme ON student.programme_id = programme.id  WHERE username=' + current + '',
-        db.engine)
-    result = db.engine.execute(sql)
-    details = []
-    for detail in result:
-        details.append(detail)
+
+    details = pd.read_sql('select student.username, student.f_name, student.l_name, student.dob, student.year, programme.programme_name '
+                          'from "student" INNER JOIN programme ON student.programme_id = programme.id  '
+                          'WHERE username=' + current + '', db.engine)
+
     programme = str(student.programme_id)
     student_id = str(current_user.id)
 
@@ -106,7 +104,7 @@ def details(username):
         result = db.engine.execute(sql)
         for assessment in result:
             summative_assessments.append(assessment)
-    return render_template('details.html', title='Your Details', student=student, details=details, courses=courses,summative_assessments=summative_assessments)
+    return render_template('details.html', title='Your Details', student=student, details=details, courses=courses, summative_assessments=summative_assessments)
 
 
 #NO LONGER USED
@@ -264,11 +262,11 @@ def programmefeedback(username):
     img = io.BytesIO()
     plt.clf()
     plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(sum(student_l1_results),sum(student_l2_results) , 'ko', label='You', markersize=7)
+    plt.plot(sum(student_l1_results),sum(student_l2_results), 'ko', label='You', markersize=7)
     plt.xlim(min(level1grades) - 1, 22)
     plt.ylim(min(level2grades) - 1, 22)
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-    plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black', marker='+')#REMOVE IN FINAL VERSION
+    plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black', marker='+')#MAYBE REMOVE IN FINAL VERSION
     plt.xlabel('Level 1 Grade')
     plt.ylabel('Level 2 Grade')
     plt.savefig(img, format='png')

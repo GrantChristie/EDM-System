@@ -5,12 +5,14 @@
     <h1>Details for {{ student.username }}</h1>
     <h3>General Information</h3>
     <p>
-    <ul style="list-style-type:none">
-        <li>Username: {{ details[0][0] }}</li>
-        <li>Forename: {{ details[0][1] }}</li>
-        <li>Surname: {{ details[0][2] }}</li>
-        <li>Date of Birth: {{ details[0][3] }}</li>
-        <li>Programme: {{ details[0][4] }}</li>
+    <ul>
+     {% for key,value in details.iterrows() %}
+         <li>Username: {{ value['username'] }}</li>
+         <li>First Name: {{ value['f_name'] }}</li>
+         <li>Last Name: {{ value['l_name'] }}</li>
+         <li>Current Year: {{ value['year'] }}</li>
+         <li>Programme Name: {{ value['programme_name'] }}</li>
+    {% endfor %}
     </ul>
     </p>
     <p>

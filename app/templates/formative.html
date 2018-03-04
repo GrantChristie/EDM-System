@@ -20,9 +20,9 @@
     {% endif %}
 
     {% if plot_url2 != "" %}
-        <div id = "plotDIV">
-        <p><img src="data:image/png;base64, {{ plot_url2 }}"></p>
-        <p>{{ html_position }}</p>
+        <div id="plotDIV">
+            <p><img src="data:image/png;base64, {{ plot_url2 }}"></p>
+            <p>{{ html_position }}</p>
         </div>
         <button onclick="togglePLOT()">Toggle Line Chart</button>
     {% endif %}
