@@ -3,4 +3,8 @@
 
 {% block app_content %}
     <h1>Level {{ level }} Sub-Session {{ session }} Feedback</h1>
+    {% for name, grade in grades %}
+        {{ name }} {{ grade }}<br>
+    {% endfor %}
+    Given these results your average mark for this sub session is: {{ session1grade }}
 {% endblock %}

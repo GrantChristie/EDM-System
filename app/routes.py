@@ -31,14 +31,14 @@ time = datetime.datetime.now()
 @login_required
 def home():
     # Get student's overdue formative assessments for each course
-    sql = text(
+    overdue_formative = pd.read_sql(
         "SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted = 0 and student_formative_assessments.student_id =" + str(
             current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
-    result = db.engine.execute(sql)
-    assessments = []
-    for row in result:
-        assessments.append(row)
-    return render_template('home.html', title='Home', time=time, assessments=assessments)
+    if overdue_formative.empty:
+        formative_message = "You have no overdue assessments."
+    else:
+        formative_message = "The following assessments are overdue:"
+    return render_template('home.html', title='Home', time=time, formative_message=formative_message, overdue_formative=overdue_formative)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -473,11 +473,22 @@ def subsessionfeedback(username, level, session):
                                  'inner JOIN programme_courses on course.id = programme_courses.course_id '
                                  'AND student_id = '+ str(current_user.id) + ' and course.level = '+str(level)+' and course.sub_session = '+str(session)+' group by course.id',db.engine)
 
+    total_session1_credits = session1_student_results['credits'].sum()
+    student_session1_results = []
+
+    for course_credits, grade in zip(session1_student_results['credits'].values, session1_student_results['course_grade'].values):
+        student_session1_results.append(calculategpa(grade, course_credits, total_session1_credits))
+
+    session1grade = gradebandcheck(sum(student_session1_results))
+
     past_students = pd.read_sql("SELECT id FROM student where username <> 'admin' "
                                 "and year > " + str(current_user.year) +
                                 'and programme_id =' + str(current_user.programme_id),db.engine)
+    grades = []
+    for x in session1_student_results.values:
+        grades.append((x[0], gradebandcheck(x[2])))
 
-    return render_template('subsessionfeedback.html', title='Sub-Session Feedback', level=level, session=session)
+    return render_template('subsessionfeedback.html', title='Sub-Session Feedback', level=level, session=session, session1_student_results=session1_student_results, session1grade=session1grade, grades=grades)
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required

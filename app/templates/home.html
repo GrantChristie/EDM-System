@@ -4,19 +4,17 @@
 {% block app_content %}
     <h1>Hi, {{ current_user.username }}!</h1>
     Current Time: {{ time }}<br>
-    {% if not assessments %}
-        You have no overdue assessments
-    {% else %}
-        Warning the following assessments are overdue:<br>
-    {% endif %}
-    {% for assessment in assessments %}
+    {{ formative_message }}<br>
+    {% if formative_message == "The following assessments are overdue:" %}
         <ul>
-            <li>{{ assessment[2] }}: {{ assessment[0] }} due on {{ assessment[1] }}</li>
+            {% for key,value in overdue_formative.iterrows() %}
+                <li>{{ value['course_name'] }} {{ value['name'] }} {{ value['due_date'] }}</li>
+            {% endfor %}
         </ul>
-    {% endfor %}
+    {% endif %}
     {% if current_user.username != 'admin' %}
         <p>
-            <a href="{{ url_for('subsessionfeedback', username=current_user.username, level = current_user.year, session = 1) }}">Sub
-                Session 1 Feedback</a></p>
+            <a href="{{ url_for('subsessionfeedback', username=current_user.username, level = 1, session = 1) }}">
+                Year 1 Sub Session 1 Feedback</a></p>
     {% endif %}
 {% endblock %}
