@@ -346,9 +346,20 @@ def formativefeedback(username):
 
     if form.validate_on_submit():
         choice = str(form.course_choice.data)
-        time = form.dt.data
-        df = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.student_id =" + str(
-                current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "' and course.id =" + choice + " order by formative_assessment.due_date", db.engine)
+        start_time = form.start_dt.data
+        end_time = form.end_dt.data
+        df = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, "
+                         "course.course_name, student_formative_assessments.cgs "
+                         "from formative_assessment "
+                         "inner join student_formative_assessments "
+                         "on student_formative_assessments.formative_assessment_id = formative_assessment.id "
+                         "inner join course "
+                         "on formative_assessment.course_id = course.id "
+                         "where student_formative_assessments.student_id ="
+                         + str(current_user.id) + "and formative_assessment.due_date >='" + start_time.strftime('%Y-%m-%d') +
+                         "' and formative_assessment.due_date <='" + end_time.strftime('%Y-%m-%d') +
+                         "'and course.id =" + choice +
+                         " order by formative_assessment.due_date", db.engine)
 
         if df.empty:
             flash("No results for that course.")
@@ -384,8 +395,9 @@ def formativefeedback(username):
                                                      "inner join student "
                                                      "on student_formative_assessments.student_id = student.id "
                                                      "where student_formative_assessments.student_id =" + str(classmate_id) +
-                                                     " and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') +
-                                                     "' and course.id =" + choice +
+                                                     " and formative_assessment.due_date >='" + start_time.strftime('%Y-%m-%d') +
+                                                     "' and formative_assessment.due_date <='" + end_time.strftime('%Y-%m-%d') +
+                                                     " ' and course.id =" + choice +
                                                      " and student.year = " + str(current_user.year) +
                                                      " order by formative_assessment.due_date", db.engine)
                     classmate_objects = classmates_results['name'].values
