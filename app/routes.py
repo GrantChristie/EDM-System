@@ -32,7 +32,7 @@ time = datetime.datetime.now()
 def home():
     # Get student's overdue formative assessments for each course
     overdue_formative = pd.read_sql(
-        "SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted = 0 and student_formative_assessments.student_id =" + str(
+        "SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted is NULL and student_formative_assessments.student_id =" + str(
             current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
     if overdue_formative.empty:
         formative_message = "You have no overdue assessments."
@@ -359,7 +359,8 @@ def formativefeedback(username):
                          + str(current_user.id) + "and formative_assessment.due_date >='" + start_time.strftime('%Y-%m-%d') +
                          "' and formative_assessment.due_date <='" + end_time.strftime('%Y-%m-%d') +
                          "'and course.id =" + choice +
-                         " order by formative_assessment.due_date", db.engine)
+                         " and student_formative_assessments.submitted is not NULL "
+                         "order by formative_assessment.due_date", db.engine)
 
         if df.empty:
             flash("No results for that course.")
@@ -384,7 +385,7 @@ def formativefeedback(username):
                 img = io.BytesIO()
                 plt.clf()
                 plt.plot(range(len(objects)), performance, color='black')
-                classmate_ids = pd.read_sql("SELECT student_id FROM student_formative_assessments WHERE student_id <> "+str(current_user.id)+" GROUP BY student_id;", db.engine)
+                classmate_ids = pd.read_sql("SELECT student_id FROM student_formative_assessments WHERE student_id <> "+str(current_user.id)+" and student_formative_assessments.submitted is not null GROUP BY student_id;", db.engine)
                 for classmate_id in classmate_ids['student_id'].values:
                     classmates_results = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name, student_formative_assessments.cgs, student.year "
                                                      "from formative_assessment "
@@ -399,6 +400,7 @@ def formativefeedback(username):
                                                      "' and formative_assessment.due_date <='" + end_time.strftime('%Y-%m-%d') +
                                                      " ' and course.id =" + choice +
                                                      " and student.year = " + str(current_user.year) +
+                                                     " and student_formative_assessments.submitted is not NULL"
                                                      " order by formative_assessment.due_date", db.engine)
                     classmate_objects = classmates_results['name'].values
                     classmate_performance = classmates_results['cgs'].values
@@ -444,7 +446,8 @@ def formativefeedback(username):
                                  "where student.year =" + str(current_user.year) +
                                  " and formative_assessment.course_id = " + choice +
                                  " and formative_assessment.due_date <= '" + time.strftime('%Y-%m-%d') +
-                                 "' group by student_id order by sum desc", db.engine)
+                                 "' and student_Formative_assessments.submitted is not null"
+                                 " group by student_id order by sum desc", db.engine)
             position = scores.student_id[scores.student_id == current_user.id].index.tolist()[0]+1
             if position != len(scores):
                 html_position = ("You are " + ordinal(position) + " out of " + str(len(scores)) + " classmates")
@@ -648,9 +651,15 @@ def addformativeresult():
                 if pd.read_sql(
                         'SELECT EXISTS (SELECT * FROM STUDENT WHERE ID=' + student_id + 'and programme_id=' + str(
                                 programme_id) + ')', db.engine)['exists'][0] == True:
-                    db.engine.execute(text(
-                        'INSERT INTO student_formative_assessments (student_id, formative_assessment_id, cgs, submitted) VALUES (' + student_id + ',' + formative_assessment_id + ',' + str(
-                            form.cgs.data) + ',' + str(form.submitted.data) + ')'))
+                    if str(form.submitted.data) == 'None':
+                        db.engine.execute(text(
+                            'INSERT INTO student_formative_assessments (student_id, formative_assessment_id, cgs, submitted) VALUES (' + student_id + ',' + formative_assessment_id + ',' + str(
+                                form.cgs.data) + ', NUll)'))
+                    else:
+                        db.engine.execute(text(
+                            'INSERT INTO student_formative_assessments (student_id, formative_assessment_id, cgs, submitted) VALUES (' + student_id + ',' + formative_assessment_id + ',' + str(
+                                form.cgs.data) + ",'" + str(form.submitted.data) + "')"))
+
                     flash('Result added')
                     break
                 else:
