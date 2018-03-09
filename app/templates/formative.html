@@ -15,6 +15,9 @@
         <div id="barDIV">
             <p><img src="data:image/png;base64, {{ plot_url }}"></p>
             <p>{{ average_grade }}</p>
+            {% for message in time_left_messages %}
+                {{ message }}<br>
+            {% endfor %}
         </div>
         <button onclick="toggleBAR()">Toggle Bar Chart</button>
     {% endif %}

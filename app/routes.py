@@ -349,7 +349,7 @@ def formativefeedback(username):
         start_time = form.start_dt.data
         end_time = form.end_dt.data
         df = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, "
-                         "course.course_name, student_formative_assessments.cgs "
+                         "course.course_name, student_formative_assessments.cgs, student_formative_assessments.submitted "
                          "from formative_assessment "
                          "inner join student_formative_assessments "
                          "on student_formative_assessments.formative_assessment_id = formative_assessment.id "
@@ -449,14 +449,24 @@ def formativefeedback(username):
                                  "' and student_Formative_assessments.submitted is not null"
                                  " group by student_id order by sum desc", db.engine)
             position = scores.student_id[scores.student_id == current_user.id].index.tolist()[0]+1
+
             if position != len(scores):
                 html_position = ("You are " + ordinal(position) + " out of " + str(len(scores)) + " classmates")
             else:
                 html_position = ("You are last out of your " + str(len(scores)) + " classmates")
             average_grade = "Your average grade based on your formative results is " + gradebandcheck(sum(df['cgs'].values)/len(df)) + "."
 
+            # Check how long a student had left for each submission
+            time_left_messages = []
+            for index, row in df.iterrows():
+                time_left = abs(row['due_date']-row['submitted']).days
+                cgs = row['cgs']
+                #If they had more than two days left and scored a C grade or lower then add a message to the array.
+                if time_left >= 2 and cgs < 15:
+                    time_left_messages.append("You had " + str(time_left) + " days left before the due date for " + row['name'] + " and scored poorly, use all the time available to study the material.")
+            
             return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
-                                   form=form, html_position=html_position, average_grade=average_grade)
+                                   form=form, html_position=html_position, average_grade=average_grade, time_left_messages=time_left_messages)
     return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
                            form=form)
 
