@@ -13,8 +13,5 @@
         </ul>
     {% endif %}
     {% if current_user.username != 'admin' %}
-        <p>
-            <a href="{{ url_for('subsessionfeedback', username=current_user.username, level = 1, session = 1) }}">
-                Year 1 Sub Session 1 Feedback</a></p>
     {% endif %}
 {% endblock %}

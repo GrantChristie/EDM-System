@@ -3,7 +3,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 from app.models import Student, Programme, Course, FormativeAssessment, SummativeAssessment
 from flask import render_template, request
 from app.forms import LoginForm, AddStudent, AddProgramme, AddCourse, AddFormativeAssessment, AddSummativeAssessment, \
-    AddCourseToProgramme, AddFormativeResult, AddSummativeResult, SelectCourse
+    AddCourseToProgramme, AddFormativeResult, AddSummativeResult, SelectFormativeCourse, SelectYear, SelectCourse
 from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
@@ -107,50 +107,28 @@ def details(username):
     return render_template('details.html', title='Your Details', student=student, details=details, courses=courses, summative_assessments=summative_assessments)
 
 
-#NO LONGER USED
-@app.route('/coursefeedback/<course>')
+@app.route('/coursefeedback/<username>', methods=['GET', 'POST'])
 @login_required
-def coursefeedback(course):
-    # Get all the summed scores excluding the current logged in user
-    df = pd.read_sql(
-        "SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id <>" + str(
-            current_user.id) + " and due_date <='" + time.strftime(
-            '%Y-%m-%d') + "' and formative_assessment.course_id =" + course + "group by student_id", db.engine)
-    # Get the logged in user's summed scores
-    student_data = pd.read_sql(
-        "SELECT SUM(cgs) AS cgssum, SUM(submitted) AS submittedsum from student_formative_assessments inner join formative_assessment on student_formative_assessments.formative_assessment_id=formative_assessment.id where student_id =" + str(
-            current_user.id) + " and due_date <='" + time.strftime(
-            '%Y-%m-%d') + "' and formative_assessment.course_id =" + course, db.engine)
-    f1 = df['cgssum'].values
-    f2 = df['submittedsum'].values
+def coursefeedback(username):
+    student = Student.query.filter_by(username=username).first_or_404()
+    # Check if the student is trying to access another student's page
+    if current_user.username != student.username:
+        flash('You do not have permission to view this page')
+        return redirect(url_for('home'))
+    programme = str(student.programme_id)
+    courses = pd.read_sql('select course.id, course.course_name, course.level, course.sub_session '
+                          'from course inner join programme_courses on programme_courses.course_id=course.id '
+                          'where programme_courses.programme_id=' + programme + ' and level <= ' + str(current_user.year)
+                          + 'order by course.level, course.sub_session', db.engine)
+    course_ids = courses['id'].values
+    course_names = courses['course_name'].values
 
-    x = np.array(list(zip(f2, f1)))
-    kmeans = KMeans(n_clusters=3).fit(x)
-    prediction = kmeans.predict([[student_data['submittedsum'].values[0],student_data['cgssum'].values[0]]])
-
-    img = io.BytesIO()
-    plt.clf()
-    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(student_data['submittedsum'].values,student_data['cgssum'].values, 'y*', label='You')
-    plt.xticks(np.arange(min(f2), max(f2)+1, 1))
-    plt.yticks(np.arange(min(f1), max(f1)+1, 10))
-    plt.xlabel('Total Submitted')
-    plt.ylabel('Total CGS Score')
-    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-    # plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black')
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plot_url = base64.b64encode(img.getvalue()).decode()
-
-    # If the predicted group is the same group that the best possible result belongs to that is the top group
-    if prediction == kmeans.predict([[5, 110]]):
-        feedback = "You are in the top group"
-    # If the predicted group is the same group the the worst possible result belongs to that is the bottom group
-    elif prediction == kmeans.predict([[0, 0]]):
-        feedback = "You are in the bottom group"
-    else:  # Otherwise prediction belongs in the middle group
-        feedback = "You are average"
-    return render_template('feedback.html', title='Feedback', feedback=feedback, plot_url=plot_url)
+    form = SelectCourse()
+    form.course_choice.choices = [(x, y) for x, y in zip(course_ids, course_names)]
+    if form.validate_on_submit():
+        choice = str(form.course_choice.data)
+        return choice
+    return render_template('coursefeedback.html', title='Course Feedback', form=form)
 
 
 @app.route('/programmefeedback/<username>')
@@ -341,7 +319,7 @@ def formativefeedback(username):
     course_ids = courses['id'].values
     course_names = courses['course_name'].values
 
-    form = SelectCourse()
+    form = SelectFormativeCourse()
     form.course_choice.choices = [(x, y) for x, y in zip(course_ids, course_names)]
 
     if form.validate_on_submit():
@@ -464,54 +442,32 @@ def formativefeedback(username):
                 #If they had more than two days left and scored a C grade or lower then add a message to the array.
                 if time_left >= 2 and cgs < 15:
                     time_left_messages.append("You had " + str(time_left) + " days left before the due date for " + row['name'] + " and scored poorly, use all the time available to study the material.")
-            
+
             return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
                                    form=form, html_position=html_position, average_grade=average_grade, time_left_messages=time_left_messages)
     return render_template('formative.html', title='Formative Feedback', plot_url=plot_url, plot_url2=plot_url2,
                            form=form)
 
 
-@app.route('/subsessionfeedback/<username>/<level><session>/')
+@app.route('/yearfeedback/<username>', methods=['GET', 'POST'])
 @login_required
-def subsessionfeedback(username, level, session):
+def yearfeedback(username):
     student = Student.query.filter_by(username=username).first_or_404()
     # Check if the student is trying to access another student's page
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
-    if int(level) > current_user.year:
-        flash("You have no data for that year.")
-        return redirect(url_for("home"))
-    elif int(session) > 2:
-        flash("Sub Session does not exist.")
-        return redirect(url_for("home"))
-
-    session1_student_results = pd.read_sql('SELECT course.course_name as course_name, credits, '
-                                 'sum(contribution * cgs) as course_grade '
-                                 'from student_summative_assessments '
-                                 'inner JOIN summative_assessment '
-                                 'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                                 'inner JOIN course '
-                                 'on summative_assessment.course_id = course.id '
-                                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                 'AND student_id = '+ str(current_user.id) + ' and course.level = '+str(level)+' and course.sub_session = '+str(session)+' group by course.id',db.engine)
-
-    total_session1_credits = session1_student_results['credits'].sum()
-    student_session1_results = []
-
-    for course_credits, grade in zip(session1_student_results['credits'].values, session1_student_results['course_grade'].values):
-        student_session1_results.append(calculategpa(grade, course_credits, total_session1_credits))
-
-    session1grade = gradebandcheck(sum(student_session1_results))
-
-    past_students = pd.read_sql("SELECT id FROM student where username <> 'admin' "
-                                "and year > " + str(current_user.year) +
-                                'and programme_id =' + str(current_user.programme_id),db.engine)
-    grades = []
-    for x in session1_student_results.values:
-        grades.append((x[0], gradebandcheck(x[2])))
-
-    return render_template('subsessionfeedback.html', title='Sub-Session Feedback', level=level, session=session, session1_student_results=session1_student_results, session1grade=session1grade, grades=grades)
+    if student.year > 1:
+        form = SelectYear()
+        if form.validate_on_submit():
+            choice = str(form.year.data)
+            student_data = pd.read_sql("SELECT * FROM STUDENT "
+                                       "WHERE ID = " + str(student.id), db.engine)
+            return "You selected " + choice
+        else:
+            return render_template('yearfeedback.html', title='Year Feedback', form=form)
+    else:
+        return "Code for student who is in programme year 1"
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required

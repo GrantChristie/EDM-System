@@ -71,8 +71,18 @@ class AddSummativeResult(FlaskForm):
     submit = SubmitField('Add')
 
 
-class SelectCourse(FlaskForm):
+class SelectFormativeCourse(FlaskForm):
     start_dt = DateField('Select Start Date', format='%Y-%m-%d', default=datetime.datetime.now())
     end_dt = DateField('Select End Date', format='%Y-%m-%d', default=datetime.datetime.now())
+    course_choice = SelectField('Choose a course', coerce=int)
+    submit = SubmitField('Select')
+
+
+class SelectYear(FlaskForm):
+    year = SelectField('Choose a year to get feedback for',choices=[(1, '1'), (2, '2')], coerce=int)
+    submit = SubmitField('Select')
+
+
+class SelectCourse(FlaskForm):
     course_choice = SelectField('Choose a course', coerce=int)
     submit = SubmitField('Select')
