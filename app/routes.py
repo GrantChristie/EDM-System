@@ -504,20 +504,44 @@ def yearfeedback(username):
                                      'AND student_id =' + str(student.id) + 'and course.level = ' + choice + ' group by course.id',
                                      db.engine)
 
-            sub_session1_grade = gradebandcheck(student_year_results.loc[student_year_results['sub_session'] == 1, 'course_grade'].sum()/3)
-            sub_session2_grade =  gradebandcheck(student_year_results.loc[student_year_results['sub_session'] == 2, 'course_grade'].sum()/3)
+            #Calculate logged in student's grade for sub session 1 of their selected year
+            sub_session1_credits = student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'].sum()
+            student_session1_results = []
+            for course_credits, grade in zip(student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'],student_year_results.loc[student_year_results['sub_session'] == 1, 'course_grade']):
+                student_session1_results.append(calculategpa(grade, course_credits, sub_session1_credits))
+                sub_session1_grade = sum(student_session1_results)
 
-            if gradetocgs(sub_session1_grade) < gradetocgs(sub_session2_grade):
-                sub_session_message = "Well Done, your overall performance improved throughout the year."
-            elif gradetocgs(sub_session1_grade) == gradetocgs(sub_session2_grade):
+            #Calculate logged in student's grade for sub session 2 of their selected year
+            sub_session2_credits = student_year_results.loc[student_year_results['sub_session'] == 2, 'credits'].sum()
+            student_session2_results = []
+            for course_credits, grade in zip(student_year_results.loc[student_year_results['sub_session'] == 2, 'credits'],student_year_results.loc[student_year_results['sub_session'] == 2, 'course_grade']):
+                student_session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
+                sub_session2_grade = sum(student_session2_results)
+
+            if gradebandcheck(sub_session1_grade) == gradebandcheck(sub_session2_grade):
                 sub_session_message = "Your overall performance was consistent throughout the year."
+            elif sub_session1_grade < sub_session2_grade:
+                sub_session_message = "Well Done, your overall performance improved throughout the year."
             else:
                 sub_session_message = "Your overall performance decreased throughout the year."
+            year_grade = "With these results your overall grade for the year is: " + gradebandcheck((sub_session1_grade+sub_session2_grade)/2)
 
-            # ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
+            img = io.BytesIO()
+            plt.clf()
+            plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',markersize=7)
+            plt.xlim(0, 22)
+            plt.ylim(0, 22)
+            plt.xlabel('Sub Session 1 Grade')
+            plt.ylabel('Sub Session 2 Grade')
+            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+            plt.savefig(img, format='png')
+            img.seek(0)
+            plot_url = base64.b64encode(img.getvalue()).decode()
+
+
             return render_template('yearfeedback.html', title='Year Feedback', form=form,
-                                   sub_session1_grade=sub_session1_grade, sub_session2_grade=sub_session2_grade,
-                                   sub_session_message=sub_session_message)
+                                   sub_session1_grade=gradebandcheck(sub_session1_grade), sub_session2_grade=gradebandcheck(sub_session2_grade),
+                                   sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url)
         else:
             return render_template('yearfeedback.html', title='Year Feedback', form=form)
     else:

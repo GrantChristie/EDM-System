@@ -17,4 +17,10 @@
     {% if sub_session_message is defined %}
         {{ sub_session_message }}<br>
     {% endif %}
+    {% if year_grade is defined %}
+        {{ year_grade }}
+    {% endif %}
+    {% if plot_url is defined %}
+        <p><img src="data:image/png;base64, {{ plot_url }}"></p>
+    {% endif %}
 {% endblock %}

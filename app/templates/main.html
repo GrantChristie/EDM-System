@@ -30,6 +30,8 @@
                             <ul class="dropdown-menu">
                                 <li><a href="{{ url_for('programmefeedback', username=current_user.username) }}">Programme
                                     Feedback</a></li>
+                                <li><a href="{{ url_for('yearfeedback', username=current_user.username) }}">Year
+                                    Feedback</a></li>
                             </ul>
                         </li>
                     {% endif %}
