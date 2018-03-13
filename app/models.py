@@ -23,7 +23,7 @@ student_summative_assessments = db.Table('student_summative_assessments',
                                          db.Column('summative_assessment_id', db.Integer,
                                                    db.ForeignKey("summative_assessment.id")),
                                          db.Column('cgs', db.Integer),
-                                         db.Column('submitted', db.Integer)
+                                         db.Column('submitted', db.Date)
                                          )
 
 

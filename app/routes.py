@@ -35,10 +35,22 @@ def home():
         "SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted is NULL and student_formative_assessments.student_id =" + str(
             current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
     if overdue_formative.empty:
-        formative_message = "You have no overdue assessments."
+        formative_message = "You have no overdue formative assessments."
     else:
-        formative_message = "The following assessments are overdue:"
-    return render_template('home.html', title='Home', time=time, formative_message=formative_message, overdue_formative=overdue_formative)
+        formative_message = "The following formative assessments are overdue:"
+
+    overdue_summative = pd.read_sql(
+        "SELECT summative_assessment.name, summative_assessment.due_date, course.course_name from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id = summative_assessment.id inner join course on summative_assessment.course_id = course.id where student_summative_assessments.submitted is NULL and student_summative_assessments.student_id =" + str(
+            current_user.id) + "and summative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
+    print(overdue_summative)
+    if overdue_summative.empty:
+        summative_message = "You have no overdue summative assessments."
+    else:
+        summative_message = "The following summative assessments are overdue:"
+
+    return render_template('home.html', title='Home', time=time, formative_message=formative_message,
+                           overdue_formative=overdue_formative, summative_message=summative_message,
+                           overdue_summative=overdue_summative)
 
 
 @app.route('/login', methods=['GET', 'POST'])

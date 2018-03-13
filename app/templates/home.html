@@ -5,9 +5,17 @@
     <h1>Hi, {{ current_user.username }}!</h1>
     Current Time: {{ time }}<br>
     {{ formative_message }}<br>
-    {% if formative_message == "The following assessments are overdue:" %}
+    {% if formative_message == "The following formative assessments are overdue:" %}
         <ul>
             {% for key,value in overdue_formative.iterrows() %}
+                <li>{{ value['course_name'] }} {{ value['name'] }} {{ value['due_date'] }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {{ summative_message }}<br>
+        {% if summative_message == "The following summative assessments are overdue:" %}
+        <ul>
+            {% for key,value in overdue_summative.iterrows() %}
                 <li>{{ value['course_name'] }} {{ value['name'] }} {{ value['due_date'] }}</li>
             {% endfor %}
         </ul>

@@ -67,7 +67,7 @@ class AddSummativeResult(FlaskForm):
     student_id = SelectField('Student', coerce=int)
     summative_assessment_id = SelectField('Summative Assessment', coerce=int)
     cgs = IntegerField('CGS', default=0, validators=[NumberRange(min=0, max=22)])
-    submitted = SelectField('Submitted', choices=[(1, 'Yes'), (0, 'No')], coerce=int)
+    submitted = DateField('Date Submitted On', validators=[Optional()])
     submit = SubmitField('Add')
 
 
