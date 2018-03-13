@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model
 from sklearn.naive_bayes import GaussianNB
+from operator import itemgetter
 import datetime
 import pandas as pd
 import math
@@ -491,8 +492,8 @@ def yearfeedback(username):
     if student.year > 1:
         form = SelectYear()
         if form.validate_on_submit():
-            class_session1_grades = []
-            class_session2_grades = []
+            class_session1_grades = pd.DataFrame(columns=['id','grade'])
+            class_session2_grades = pd.DataFrame(columns=['id','grade'])
             choice = str(form.year.data)
             #ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
             student_year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
@@ -564,20 +565,19 @@ def yearfeedback(username):
                     session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
                     session2_grade = sum(session2_results)
                 if session1_grade != 0 or session2_grade != 0:
-                    class_session1_grades.append(session1_grade)
-                    class_session2_grades.append(session2_grade)
+                    class_session1_grades.loc[len(class_session1_grades)] = [int(id),session1_grade]
+                    class_session2_grades.loc[len(class_session2_grades)] = [int(id),session2_grade]
 
-            x = np.array(list(zip(class_session1_grades, class_session2_grades)))
+            x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
             kmeans = KMeans(n_clusters=5).fit(x)
-
             img = io.BytesIO()
             plt.clf()
             plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
             plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
                         marker='+')  # MAYBE REMOVE IN FINAL VERSION
             plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',markersize=7)
-            plt.xlim(min(class_session1_grades)-1, 22)
-            plt.ylim(min(class_session1_grades)-2, 22)
+            plt.xlim(min(class_session1_grades['grade'].values)-1, 22)
+            plt.ylim(min(class_session2_grades['grade'].values)-1, 22)
             plt.xlabel('Sub Session 1 Grade')
             plt.ylabel('Sub Session 2 Grade')
             plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
@@ -585,10 +585,17 @@ def yearfeedback(username):
             img.seek(0)
             plot_url = base64.b64encode(img.getvalue()).decode()
 
+            class_session1_grades.sort_values(by='grade', inplace=True, ascending=False)
+            class_session1_grades.reset_index(drop=True, inplace=True)
+            class_session2_grades.sort_values(by='grade', inplace=True, ascending=False)
+            class_session2_grades.reset_index(drop=True, inplace=True)
+            sub_session1_rank = "You ranked " + ordinal(class_session1_grades.id[class_session1_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 1"
+            sub_session2_rank = "You ranked " + ordinal(class_session2_grades.id[class_session2_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 2"
 
             return render_template('yearfeedback.html', title='Year Feedback', form=form,
                                    sub_session1_grade=gradebandcheck(sub_session1_grade), sub_session2_grade=gradebandcheck(sub_session2_grade),
-                                   sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url)
+                                   sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url,
+                                   sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank)
         else:
             return render_template('yearfeedback.html', title='Year Feedback', form=form)
     else:
