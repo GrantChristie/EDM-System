@@ -491,6 +491,8 @@ def yearfeedback(username):
     if student.year > 1:
         form = SelectYear()
         if form.validate_on_submit():
+            class_session1_grades = []
+            class_session2_grades = []
             choice = str(form.year.data)
             #ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
             student_year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
@@ -526,11 +528,56 @@ def yearfeedback(username):
                 sub_session_message = "Your overall performance decreased throughout the year."
             year_grade = "With these results your overall grade for the year is: " + gradebandcheck((sub_session1_grade+sub_session2_grade)/2)
 
+            # Retrieve a list of all students in the logged in student's class including themself
+            class_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(
+                current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
+
+            for id in class_list['id'].values:
+                id = str(id)
+                year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
+                                                   'sum(contribution * cgs) as course_grade '
+                                                   'from student_summative_assessments '
+                                                   'inner JOIN summative_assessment '
+                                                   'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                                   'inner JOIN course '
+                                                   'on summative_assessment.course_id = course.id '
+                                                   'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                                   'AND student_id =' + id + 'and course.level = ' + choice + ' group by course.id',db.engine)
+
+                sub_session1_credits = year_results.loc[year_results['sub_session'] == 1, 'credits'].sum()
+                session1_results = []
+                for course_credits, grade in zip(
+                        year_results.loc[year_results['sub_session'] == 1, 'credits'],
+                        year_results.loc[year_results['sub_session'] == 1, 'course_grade']):
+                    session1_results.append(calculategpa(grade, course_credits, sub_session1_credits))
+                    session1_grade = sum(session1_results)
+
+                    # continue to next iteration if there are no sub session results
+                    if session1_grade == 0:
+                        continue
+
+                sub_session2_credits = year_results.loc[year_results['sub_session'] == 2, 'credits'].sum()
+                session2_results = []
+                for course_credits, grade in zip(
+                        year_results.loc[year_results['sub_session'] == 2, 'credits'],
+                        year_results.loc[year_results['sub_session'] == 2, 'course_grade']):
+                    session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
+                    session2_grade = sum(session2_results)
+                if session1_grade != 0 or session2_grade != 0:
+                    class_session1_grades.append(session1_grade)
+                    class_session2_grades.append(session2_grade)
+
+            x = np.array(list(zip(class_session1_grades, class_session2_grades)))
+            kmeans = KMeans(n_clusters=5).fit(x)
+
             img = io.BytesIO()
             plt.clf()
+            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+            plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
+                        marker='+')  # MAYBE REMOVE IN FINAL VERSION
             plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',markersize=7)
-            plt.xlim(0, 22)
-            plt.ylim(0, 22)
+            plt.xlim(min(class_session1_grades)-1, 22)
+            plt.ylim(min(class_session1_grades)-2, 22)
             plt.xlabel('Sub Session 1 Grade')
             plt.ylabel('Sub Session 2 Grade')
             plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
