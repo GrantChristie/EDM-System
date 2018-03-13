@@ -8,4 +8,22 @@
             {{ wtf.quick_form(form) }}
         </div>
     </div>
+    <br>
+
+    {% if course_info is  defined %}
+        <h3>Details</h3>
+        {% for key,value in course_info.iterrows() %}
+            <li>Level: {{ value['level'] }}</li>
+            <li>Sub Session: {{ value['sub_session'] }}</li>
+            <li>Credits: {{ value['credits'] }}</li>
+        {% endfor %}
+
+        {% for key,value in course_assessments.iterrows() %}
+            <li>{{ value['name'] }}, Due: {{ value['due_date'] }}</li>
+        {% endfor %}
+        <h3>Results</h3>
+        {% for key,value in student_results.iterrows() %}
+            <li>{{ value['name'] }}, CGS: {{ value['cgs'] }}</li>
+        {% endfor %}
+    {% endif %}
 {% endblock %}

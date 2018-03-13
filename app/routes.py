@@ -23,7 +23,7 @@ import matplotlib.patches as mpatches
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
-#time = datetime.datetime(2014, 9, 27)
+#time = datetime.datetime(2014, 12, 1)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -139,7 +139,26 @@ def coursefeedback(username):
     form.course_choice.choices = [(x, y) for x, y in zip(course_ids, course_names)]
     if form.validate_on_submit():
         choice = str(form.course_choice.data)
-        return choice
+        course_info = pd.read_sql("SELECT * FROM COURSE WHERE ID = " + choice, db.engine)
+        course_assessments = pd.read_sql("SELECT * FROM SUMMATIVE_ASSESSMENT where course_id = " + choice, db.engine)
+
+        #Retrieve the latest assessment for that course
+        last_assessment = (max(course_assessments['due_date'].values))
+        #If the current time is after the last assessment then display after course feedback
+        if time > datetime.datetime(last_assessment.year, last_assessment.month, last_assessment.day):
+            student_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION "
+                                          "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
+                                          "INNER JOIN SUMMATIVE_ASSESSMENT "
+                                          "ON STUDENT_SUMMATIVE_ASSESSMENTS.SUMMATIVE_ASSESSMENT_ID = SUMMATIVE_ASSESSMENT.ID "
+                                          "WHERE STUDENT_ID = " + str(student.id) +
+                                          "AND COURSE_ID = " + choice, db.engine)
+
+            return render_template('coursefeedback.html', title='Course Feedback', form=form,
+                                   course_info=course_info, course_assessments=course_assessments,
+                                   student_results=student_results)
+        #otherwise display the course in progress feedback
+        else:
+            print("The final assessment has yet to come")
     return render_template('coursefeedback.html', title='Course Feedback', form=form)
 
 
