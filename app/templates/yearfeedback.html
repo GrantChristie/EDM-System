@@ -8,4 +8,13 @@
             {{ wtf.quick_form(form) }}
         </div>
     </div>
+    {% if sub_session1_grade is defined %}
+        Your Average grade in sub session 1 was: {{ sub_session1_grade }}<br>
+    {% endif %}
+    {% if sub_session2_grade is defined %}
+        Your Average grade in sub session 2 was: {{ sub_session2_grade }}<br>
+    {% endif %}
+    {% if sub_session_message is defined %}
+        {{ sub_session_message }}<br>
+    {% endif %}
 {% endblock %}

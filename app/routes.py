@@ -492,9 +492,32 @@ def yearfeedback(username):
         form = SelectYear()
         if form.validate_on_submit():
             choice = str(form.year.data)
-            student_data = pd.read_sql("SELECT * FROM STUDENT "
-                                       "WHERE ID = " + str(student.id), db.engine)
-            return "You selected " + choice
+            #ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
+            student_year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
+                                     'sum(contribution * cgs) as course_grade '
+                                     'from student_summative_assessments '
+                                     'inner JOIN summative_assessment '
+                                     'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                     'inner JOIN course '
+                                     'on summative_assessment.course_id = course.id '
+                                     'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                     'AND student_id =' + str(student.id) + 'and course.level = ' + choice + ' group by course.id',
+                                     db.engine)
+
+            sub_session1_grade = gradebandcheck(student_year_results.loc[student_year_results['sub_session'] == 1, 'course_grade'].sum()/3)
+            sub_session2_grade =  gradebandcheck(student_year_results.loc[student_year_results['sub_session'] == 2, 'course_grade'].sum()/3)
+
+            if gradetocgs(sub_session1_grade) < gradetocgs(sub_session2_grade):
+                sub_session_message = "Well Done, your overall performance improved throughout the year."
+            elif gradetocgs(sub_session1_grade) == gradetocgs(sub_session2_grade):
+                sub_session_message = "Your overall performance was consistent throughout the year."
+            else:
+                sub_session_message = "Your overall performance decreased throughout the year."
+
+            # ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
+            return render_template('yearfeedback.html', title='Year Feedback', form=form,
+                                   sub_session1_grade=sub_session1_grade, sub_session2_grade=sub_session2_grade,
+                                   sub_session_message=sub_session_message)
         else:
             return render_template('yearfeedback.html', title='Year Feedback', form=form)
     else:
