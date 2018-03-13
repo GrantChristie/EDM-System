@@ -3,11 +3,13 @@
 
 {% block app_content %}
     <h1>Year Feedback</h1>
+    {% if form is defined %}
     <div class="row">
         <div class="col-md-4">
             {{ wtf.quick_form(form) }}
         </div>
-    </div>
+    </div><br>
+    {% endif %}
     {% if sub_session1_grade is defined %}
         Your Average grade in sub session 1 was: {{ sub_session1_grade }}<br>
     {% endif %}

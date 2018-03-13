@@ -10,7 +10,6 @@ from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model
 from sklearn.naive_bayes import GaussianNB
-from operator import itemgetter
 import datetime
 import pandas as pd
 import math
@@ -495,7 +494,7 @@ def yearfeedback(username):
             class_session1_grades = pd.DataFrame(columns=['id','grade'])
             class_session2_grades = pd.DataFrame(columns=['id','grade'])
             choice = str(form.year.data)
-            #ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
+            # ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
             student_year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
                                      'sum(contribution * cgs) as course_grade '
                                      'from student_summative_assessments '
@@ -507,20 +506,21 @@ def yearfeedback(username):
                                      'AND student_id =' + str(student.id) + 'and course.level = ' + choice + ' group by course.id',
                                      db.engine)
 
-            #Calculate logged in student's grade for sub session 1 of their selected year
+            # Calculate logged in student's grade for sub session 1 of their selected year
             sub_session1_credits = student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'].sum()
             student_session1_results = []
             for course_credits, grade in zip(student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'],student_year_results.loc[student_year_results['sub_session'] == 1, 'course_grade']):
                 student_session1_results.append(calculategpa(grade, course_credits, sub_session1_credits))
                 sub_session1_grade = sum(student_session1_results)
 
-            #Calculate logged in student's grade for sub session 2 of their selected year
+            # Calculate logged in student's grade for sub session 2 of their selected year
             sub_session2_credits = student_year_results.loc[student_year_results['sub_session'] == 2, 'credits'].sum()
             student_session2_results = []
             for course_credits, grade in zip(student_year_results.loc[student_year_results['sub_session'] == 2, 'credits'],student_year_results.loc[student_year_results['sub_session'] == 2, 'course_grade']):
                 student_session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
                 sub_session2_grade = sum(student_session2_results)
 
+            # Check if student has performed better or worse between the year's sub sessions
             if gradebandcheck(sub_session1_grade) == gradebandcheck(sub_session2_grade):
                 sub_session_message = "Your overall performance was consistent throughout the year."
             elif sub_session1_grade < sub_session2_grade:
@@ -547,29 +547,35 @@ def yearfeedback(username):
 
                 sub_session1_credits = year_results.loc[year_results['sub_session'] == 1, 'credits'].sum()
                 session1_results = []
+
                 for course_credits, grade in zip(
                         year_results.loc[year_results['sub_session'] == 1, 'credits'],
                         year_results.loc[year_results['sub_session'] == 1, 'course_grade']):
                     session1_results.append(calculategpa(grade, course_credits, sub_session1_credits))
                     session1_grade = sum(session1_results)
 
-                    # continue to next iteration if there are no sub session results
-                    if session1_grade == 0:
-                        continue
+                # continue to next iteration if there are no sub session results
+                if session1_grade == 0:
+                    continue
 
                 sub_session2_credits = year_results.loc[year_results['sub_session'] == 2, 'credits'].sum()
                 session2_results = []
+
                 for course_credits, grade in zip(
                         year_results.loc[year_results['sub_session'] == 2, 'credits'],
                         year_results.loc[year_results['sub_session'] == 2, 'course_grade']):
                     session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
                     session2_grade = sum(session2_results)
+
                 if session1_grade != 0 or session2_grade != 0:
                     class_session1_grades.loc[len(class_session1_grades)] = [int(id),session1_grade]
                     class_session2_grades.loc[len(class_session2_grades)] = [int(id),session2_grade]
 
+            # Create an array of session 1 and 2 grades for the kmeans algorithm to operate on
             x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
             kmeans = KMeans(n_clusters=5).fit(x)
+
+            # Plot the graph of session 1 grades against session 2 grades
             img = io.BytesIO()
             plt.clf()
             plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
@@ -585,12 +591,13 @@ def yearfeedback(username):
             img.seek(0)
             plot_url = base64.b64encode(img.getvalue()).decode()
 
+            # Sort each sub session dataframe by the grade to get the position of the logged in student in relation to their peers
             class_session1_grades.sort_values(by='grade', inplace=True, ascending=False)
             class_session1_grades.reset_index(drop=True, inplace=True)
             class_session2_grades.sort_values(by='grade', inplace=True, ascending=False)
             class_session2_grades.reset_index(drop=True, inplace=True)
-            sub_session1_rank = "You ranked " + ordinal(class_session1_grades.id[class_session1_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 1"
-            sub_session2_rank = "You ranked " + ordinal(class_session2_grades.id[class_session2_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 2"
+            sub_session1_rank = "You ranked " + ordinal(class_session1_grades.id[class_session1_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 1."
+            sub_session2_rank = "You ranked " + ordinal(class_session2_grades.id[class_session2_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 2."
 
             return render_template('yearfeedback.html', title='Year Feedback', form=form,
                                    sub_session1_grade=gradebandcheck(sub_session1_grade), sub_session2_grade=gradebandcheck(sub_session2_grade),
