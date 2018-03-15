@@ -494,7 +494,7 @@ def yearfeedback(username):
             class_session1_grades = pd.DataFrame(columns=['id','grade'])
             class_session2_grades = pd.DataFrame(columns=['id','grade'])
             choice = str(form.year.data)
-            # ADD CHECK TO SQL SO IT RETRIVES SUBMITTED VALUES THAT ARE NOT NULL
+            # ADD CHECK TO SQL SO IT RETRIEVES SUBMITTED VALUES THAT ARE NOT NULL
             student_year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
                                      'sum(contribution * cgs) as course_grade '
                                      'from student_summative_assessments '
@@ -599,14 +599,145 @@ def yearfeedback(username):
             sub_session1_rank = "You ranked " + ordinal(class_session1_grades.id[class_session1_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 1."
             sub_session2_rank = "You ranked " + ordinal(class_session2_grades.id[class_session2_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 2."
 
-            return render_template('yearfeedback.html', title='Year Feedback', form=form,
-                                   sub_session1_grade=gradebandcheck(sub_session1_grade), sub_session2_grade=gradebandcheck(sub_session2_grade),
+            return render_template('yearfeedback.html', title='Year ' + choice + ' Feedback', form=form,
+                                   sub_session1_grade=gradebandcheck(sub_session1_grade),
+                                   sub_session2_grade=gradebandcheck(sub_session2_grade),
                                    sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url,
                                    sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank)
         else:
             return render_template('yearfeedback.html', title='Year Feedback', form=form)
     else:
-        return "Code for student who is in programme year 1"
+        class_session1_grades = pd.DataFrame(columns=['id', 'grade'])
+        class_session2_grades = pd.DataFrame(columns=['id', 'grade'])
+        # ADD CHECK TO SQL SO IT RETRIEVES SUBMITTED VALUES THAT ARE NOT NULL
+        student_year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
+                                           'sum(contribution * cgs) as course_grade '
+                                           'from student_summative_assessments '
+                                           'inner JOIN summative_assessment '
+                                           'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                           'inner JOIN course '
+                                           'on summative_assessment.course_id = course.id '
+                                           'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                           'AND student_id =' + str(
+            student.id) + 'and course.level = 1 group by course.id',db.engine)
+
+        # Calculate logged in student's grade for sub session 1 of their selected year
+        sub_session1_credits = student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'].sum()
+        student_session1_results = []
+        for course_credits, grade in zip(
+                student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'],
+                student_year_results.loc[student_year_results['sub_session'] == 1, 'course_grade']):
+            student_session1_results.append(calculategpa(grade, course_credits, sub_session1_credits))
+            sub_session1_grade = sum(student_session1_results)
+
+        # Calculate logged in student's grade for sub session 2 of their selected year
+        sub_session2_credits = student_year_results.loc[student_year_results['sub_session'] == 2, 'credits'].sum()
+        student_session2_results = []
+        for course_credits, grade in zip(
+                student_year_results.loc[student_year_results['sub_session'] == 2, 'credits'],
+                student_year_results.loc[student_year_results['sub_session'] == 2, 'course_grade']):
+            student_session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
+            sub_session2_grade = sum(student_session2_results)
+
+        # Check if student has performed better or worse between the year's sub sessions
+        if gradebandcheck(sub_session1_grade) == gradebandcheck(sub_session2_grade):
+            sub_session_message = "Your overall performance was consistent throughout the year."
+        elif sub_session1_grade < sub_session2_grade:
+            sub_session_message = "Well Done, your overall performance improved throughout the year."
+        else:
+            sub_session_message = "Your overall performance decreased throughout the year."
+        year_grade = "With these results your overall grade for the year is: " + gradebandcheck(
+            (sub_session1_grade + sub_session2_grade) / 2)
+
+        # Retrieve a list of all students in the logged in student's class including themself
+        class_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(
+            current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
+
+        for id in class_list['id'].values:
+            id = str(id)
+            year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
+                                       'sum(contribution * cgs) as course_grade '
+                                       'from student_summative_assessments '
+                                       'inner JOIN summative_assessment '
+                                       'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                       'inner JOIN course '
+                                       'on summative_assessment.course_id = course.id '
+                                       'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                       'AND student_id =' + id + 'and course.level = 1 group by course.id',
+                                       db.engine)
+
+            sub_session1_credits = year_results.loc[year_results['sub_session'] == 1, 'credits'].sum()
+            session1_results = []
+
+            for course_credits, grade in zip(
+                    year_results.loc[year_results['sub_session'] == 1, 'credits'],
+                    year_results.loc[year_results['sub_session'] == 1, 'course_grade']):
+                session1_results.append(calculategpa(grade, course_credits, sub_session1_credits))
+                session1_grade = sum(session1_results)
+
+            # continue to next iteration if there are no sub session results
+            if session1_grade == 0:
+                continue
+
+            sub_session2_credits = year_results.loc[year_results['sub_session'] == 2, 'credits'].sum()
+            session2_results = []
+
+            for course_credits, grade in zip(
+                    year_results.loc[year_results['sub_session'] == 2, 'credits'],
+                    year_results.loc[year_results['sub_session'] == 2, 'course_grade']):
+                session2_results.append(calculategpa(grade, course_credits, sub_session2_credits))
+                session2_grade = sum(session2_results)
+
+            if session1_grade != 0 or session2_grade != 0:
+                class_session1_grades.loc[len(class_session1_grades)] = [int(id), session1_grade]
+                class_session2_grades.loc[len(class_session2_grades)] = [int(id), session2_grade]
+
+        # Create an array of session 1 and 2 grades for the kmeans algorithm to operate on
+        if len(class_session1_grades) < 5:
+            img = io.BytesIO()
+            plt.clf()
+            plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You', markersize=7)
+            plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
+            plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
+            plt.xlabel('Sub Session 1 Grade')
+            plt.ylabel('Sub Session 2 Grade')
+            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+            plt.savefig(img, format='png')
+            img.seek(0)
+            plot_url = base64.b64encode(img.getvalue()).decode()
+        else:
+            x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
+            kmeans = KMeans(n_clusters=5).fit(x)
+
+            # Plot the graph of session 1 grades against session 2 grades
+            img = io.BytesIO()
+            plt.clf()
+            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+            plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
+                        marker='+')  # MAYBE REMOVE IN FINAL VERSION
+            plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',markersize=7)
+            plt.xlim(min(class_session1_grades['grade'].values)-1, 22)
+            plt.ylim(min(class_session2_grades['grade'].values)-1, 22)
+            plt.xlabel('Sub Session 1 Grade')
+            plt.ylabel('Sub Session 2 Grade')
+            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+            plt.savefig(img, format='png')
+            img.seek(0)
+            plot_url = base64.b64encode(img.getvalue()).decode()
+
+        # Sort each sub session dataframe by the grade to get the position of the logged in student in relation to their peers
+        class_session1_grades.sort_values(by='grade', inplace=True, ascending=False)
+        class_session1_grades.reset_index(drop=True, inplace=True)
+        class_session2_grades.sort_values(by='grade', inplace=True, ascending=False)
+        class_session2_grades.reset_index(drop=True, inplace=True)
+        sub_session1_rank = "You ranked " + ordinal(class_session1_grades.id[class_session1_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 1."
+        sub_session2_rank = "You ranked " + ordinal(class_session2_grades.id[class_session2_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 2."
+
+        return render_template('yearfeedback.html', title='Year 1 Feedback',
+                               sub_session2_grade=gradebandcheck(sub_session2_grade),
+                               sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url,
+                               sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank)
+
 
 @app.route('/addstudent', methods=['GET', 'POST'])
 @login_required
