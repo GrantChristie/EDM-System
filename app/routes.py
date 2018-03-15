@@ -19,6 +19,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import time as t
 
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
@@ -42,7 +43,6 @@ def home():
     overdue_summative = pd.read_sql(
         "SELECT summative_assessment.name, summative_assessment.due_date, course.course_name from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id = summative_assessment.id inner join course on summative_assessment.course_id = course.id where student_summative_assessments.submitted is NULL and student_summative_assessments.student_id =" + str(
             current_user.id) + "and summative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
-    print(overdue_summative)
     if overdue_summative.empty:
         summative_message = "You have no overdue summative assessments."
     else:
@@ -527,7 +527,7 @@ def yearfeedback(username):
                 sub_session_message = "Well Done, your overall performance improved throughout the year."
             else:
                 sub_session_message = "Your overall performance decreased throughout the year."
-            year_grade = "With these results your overall grade for the year is: " + gradebandcheck((sub_session1_grade+sub_session2_grade)/2)
+            year_grade = gradebandcheck((sub_session1_grade+sub_session2_grade)/2)
 
             # Retrieve a list of all students in the logged in student's class including themself
             class_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(
@@ -655,7 +655,7 @@ def yearfeedback(username):
 
         for id in class_list['id'].values:
             id = str(id)
-            year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, '
+            year_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, level, '
                                        'sum(contribution * cgs) as course_grade '
                                        'from student_summative_assessments '
                                        'inner JOIN summative_assessment '
@@ -691,6 +691,13 @@ def yearfeedback(username):
             if session1_grade != 0 or session2_grade != 0:
                 class_session1_grades.loc[len(class_session1_grades)] = [int(id), session1_grade]
                 class_session2_grades.loc[len(class_session2_grades)] = [int(id), session2_grade]
+
+            year1_credits = year_results.loc[year_results['level'] == 1, 'credits'].sum()
+            student_year1_results = []
+            for course_credits, grade in zip(
+                    year_results.loc[year_results['level'] == 1, 'credits'],
+                    year_results.loc[year_results['level'] == 1, 'course_grade']):
+                student_year1_results.append(calculategpa(grade, course_credits, year1_credits))
 
         # Create an array of session 1 and 2 grades for the kmeans algorithm to operate on
         if len(class_session1_grades) < 5:
@@ -733,10 +740,57 @@ def yearfeedback(username):
         sub_session1_rank = "You ranked " + ordinal(class_session1_grades.id[class_session1_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 1."
         sub_session2_rank = "You ranked " + ordinal(class_session2_grades.id[class_session2_grades.id == student.id].index.tolist()[0] + 1) + " out of your "  + str(len(class_list)) + " classmates for sub session 2."
 
+        # Retrieve a list of all students who have already completed level 1 of the degree programme
+        past_student_list = pd.read_sql("SELECT id, username FROM student where username <> 'admin' and year > " + str(
+            current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
+        past_student_year1_results = []
+        past_student_year2_grades = []
+
+        for id in past_student_list['id'].values:
+            id = str(id)
+            year1_and_year2_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, level, '
+                                       'sum(contribution * cgs) as course_grade '
+                                       'from student_summative_assessments '
+                                       'inner JOIN summative_assessment '
+                                       'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                       'inner JOIN course '
+                                       'on summative_assessment.course_id = course.id '
+                                       'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                       'AND student_id =' + id + 'and course.level < 3 group by course.id',
+                                       db.engine)
+            year1_credits = year1_and_year2_results.loc[year1_and_year2_results['level'] == 1, 'credits'].sum()
+            year1_results = []
+            for course_credits, grade in zip(
+                    year1_and_year2_results.loc[year1_and_year2_results['level'] == 1, 'credits'],
+                    year1_and_year2_results.loc[year1_and_year2_results['level'] == 1, 'course_grade']):
+                year1_results.append(calculategpa(grade, course_credits, year1_credits))
+                year1_grade = sum(year1_results)
+
+            year2_credits = year1_and_year2_results.loc[year1_and_year2_results['level'] == 2, 'credits'].sum()
+            year2_results = []
+
+            for course_credits, grade in zip(
+                    year1_and_year2_results.loc[year1_and_year2_results['level'] == 2, 'credits'],
+                    year1_and_year2_results.loc[year1_and_year2_results['level'] == 2, 'course_grade']):
+                year2_results.append(calculategpa(grade, course_credits, year2_credits))
+                year2_grade = sum(year2_results)
+
+            if year1_grade != 0 or year2_grade != 0:
+                past_student_year1_results.append(year1_results)
+                past_student_year2_grades.append(gradebandcheck(year2_grade))
+
+        x_training = np.array(past_student_year1_results)
+        y_training = np.array(past_student_year2_grades)
+        clf = GaussianNB()
+        x_test = np.array([student_year1_results])
+        clf.fit(x_training, y_training)
+        bayes_prediction = (clf.predict(x_test)[0])
+
         return render_template('yearfeedback.html', title='Year 1 Feedback',
                                sub_session2_grade=gradebandcheck(sub_session2_grade),
                                sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url,
-                               sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank)
+                               sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank,
+                               prediction=bayes_prediction)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])

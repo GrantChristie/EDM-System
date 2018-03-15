@@ -20,7 +20,10 @@
         {{ sub_session_message }}<br>
     {% endif %}
     {% if year_grade is defined %}
-        {{ year_grade }}
+        With these results your overall grade for the year is: {{ year_grade }}<br>
+    {% endif %}
+    {% if prediction is defined %}
+        Based on your year 1 results your predicted year 2 grade based on previous classes is: {{ prediction }}<br>
     {% endif %}
     {% if plot_url is defined %}
         <p><img src="data:image/png;base64, {{ plot_url }}"></p>
