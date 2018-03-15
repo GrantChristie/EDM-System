@@ -576,7 +576,11 @@ def yearfeedback(username):
 
             # Create an array of session 1 and 2 grades for the kmeans algorithm to operate on
             x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
-            kmeans = KMeans(n_clusters=5).fit(x)
+
+            if len(class_session1_grades) < 5:
+                kmeans = KMeans(n_clusters=len(class_session1_grades)).fit(x)
+            else:
+                kmeans = KMeans(n_clusters=5).fit(x)
 
             # Plot the graph of session 1 grades against session 2 grades
             img = io.BytesIO()
@@ -703,42 +707,25 @@ def yearfeedback(username):
                 student_year1_results.append(calculategpa(grade, course_credits, year1_credits))
 
         # Create an array of session 1 and 2 grades for the kmeans algorithm to operate on
+        x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
         if len(class_session1_grades) < 5:
-            x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
             kmeans = KMeans(n_clusters=len(class_session1_grades)).fit(x)
-            img = io.BytesIO()
-            plt.clf()
-            plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You', markersize=7)
-            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-            plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
-                        marker='+')  # MAYBE REMOVE IN FINAL VERSION
-            plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
-            plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
-            plt.xlabel('Sub Session 1 Grade')
-            plt.ylabel('Sub Session 2 Grade')
-            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-            plt.savefig(img, format='png')
-            img.seek(0)
-            plot_url = base64.b64encode(img.getvalue()).decode()
         else:
-            x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
             kmeans = KMeans(n_clusters=5).fit(x)
-
-            # Plot the graph of session 1 grades against session 2 grades
-            img = io.BytesIO()
-            plt.clf()
-            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-            plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
-                        marker='+')  # MAYBE REMOVE IN FINAL VERSION
-            plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',markersize=7)
-            plt.xlim(min(class_session1_grades['grade'].values)-1, 22)
-            plt.ylim(min(class_session2_grades['grade'].values)-1, 22)
-            plt.xlabel('Sub Session 1 Grade')
-            plt.ylabel('Sub Session 2 Grade')
-            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-            plt.savefig(img, format='png')
-            img.seek(0)
-            plot_url = base64.b64encode(img.getvalue()).decode()
+        img = io.BytesIO()
+        plt.clf()
+        plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You', markersize=7)
+        plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+        plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
+                    marker='+')  # MAYBE REMOVE IN FINAL VERSION
+        plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
+        plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
+        plt.xlabel('Sub Session 1 Grade')
+        plt.ylabel('Sub Session 2 Grade')
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+        plt.savefig(img, format='png')
+        img.seek(0)
+        plot_url = base64.b64encode(img.getvalue()).decode()
 
         # Sort each sub session dataframe by the grade to get the position of the logged in student in relation to their peers
         class_session1_grades.sort_values(by='grade', inplace=True, ascending=False)
