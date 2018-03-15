@@ -19,7 +19,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import time as t
 
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
@@ -506,6 +505,10 @@ def yearfeedback(username):
                                      'AND student_id =' + str(student.id) + 'and course.level = ' + choice + ' group by course.id',
                                      db.engine)
 
+            if student_year_results.empty:
+                flash("No results for that year")
+                return render_template('yearfeedback.html', title='Year Feedback', form=form)
+
             # Calculate logged in student's grade for sub session 1 of their selected year
             sub_session1_credits = student_year_results.loc[student_year_results['sub_session'] == 1, 'credits'].sum()
             student_session1_results = []
@@ -701,9 +704,14 @@ def yearfeedback(username):
 
         # Create an array of session 1 and 2 grades for the kmeans algorithm to operate on
         if len(class_session1_grades) < 5:
+            x = np.array(list(zip(class_session1_grades['grade'].values, class_session2_grades['grade'].values)))
+            kmeans = KMeans(n_clusters=len(class_session1_grades)).fit(x)
             img = io.BytesIO()
             plt.clf()
             plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You', markersize=7)
+            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+            plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black',
+                        marker='+')  # MAYBE REMOVE IN FINAL VERSION
             plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
             plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
             plt.xlabel('Sub Session 1 Grade')
@@ -746,6 +754,7 @@ def yearfeedback(username):
         past_student_year1_results = []
         past_student_year2_grades = []
 
+        # Get the ids of the all the students who are in later years than the currently logged in student.
         for id in past_student_list['id'].values:
             id = str(id)
             year1_and_year2_results = pd.read_sql('SELECT course.course_name as course_name, credits, sub_session, level, '
@@ -758,6 +767,7 @@ def yearfeedback(username):
                                        'inner JOIN programme_courses on course.id = programme_courses.course_id '
                                        'AND student_id =' + id + 'and course.level < 3 group by course.id',
                                        db.engine)
+
             year1_credits = year1_and_year2_results.loc[year1_and_year2_results['level'] == 1, 'credits'].sum()
             year1_results = []
             for course_credits, grade in zip(
@@ -779,6 +789,7 @@ def yearfeedback(username):
                 past_student_year1_results.append(year1_results)
                 past_student_year2_grades.append(gradebandcheck(year2_grade))
 
+        # Train gaussian bayes and make prediction for the logged in student
         x_training = np.array(past_student_year1_results)
         y_training = np.array(past_student_year2_grades)
         clf = GaussianNB()
