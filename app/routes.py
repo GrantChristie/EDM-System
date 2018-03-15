@@ -808,7 +808,7 @@ def addsummativeresult():
                                 programme_id) + ')', db.engine)['exists'][0] == True:
                     db.engine.execute(text(
                         'INSERT INTO student_summative_assessments (student_id, summative_assessment_id, cgs, submitted) VALUES (' + student_id + ',' + summative_assessment_id + ',' + str(
-                            form.cgs.data) + ',' + str(form.submitted.data) + ')'))
+                            form.cgs.data)  + ",'" + str(form.submitted.data) + "')"))
                     flash('Result added')
                     break
                 else:
