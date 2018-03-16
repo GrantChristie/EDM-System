@@ -532,6 +532,27 @@ def yearfeedback(username):
                 sub_session_message = "Your overall performance decreased throughout the year."
             year_grade = gradebandcheck((sub_session1_grade+sub_session2_grade)/2)
 
+            # Get each individual assessment the logged in student has completed
+            all_student_assessments = pd.read_sql("select name,cgs,contribution,due_date,submitted "
+                                                  "from student_summative_assessments "
+                                                  "inner join summative_assessment "
+                                                  "on summative_assessment.id = summative_assessment_id "
+                                                  "where student_id = " + str(student.id) , db.engine)
+
+            # Separate written exams and coursework into two lists
+            written_exams = []
+            coursework = []
+            for index, row in all_student_assessments.iterrows():
+                if row['name'] == 'Written Exam':
+                    written_exams.append(row['cgs'])
+                else:
+                    coursework.append(row['cgs'])
+
+            # Get a rough estimate of the student's overall performance in the two main types of assessment
+            written_exam_average = gradebandcheck(sum(written_exams)/len(written_exams))
+            coursework_average = gradebandcheck(sum(coursework)/len(coursework))
+
+
             # Retrieve a list of all students in the logged in student's class including themself
             class_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(
                 current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
@@ -610,7 +631,8 @@ def yearfeedback(username):
                                    sub_session1_grade=gradebandcheck(sub_session1_grade),
                                    sub_session2_grade=gradebandcheck(sub_session2_grade),
                                    sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url,
-                                   sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank)
+                                   sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank,
+                                   written_exam_average=written_exam_average, coursework_average=coursework_average)
         else:
             return render_template('yearfeedback.html', title='Year Feedback', form=form)
     else:
@@ -655,6 +677,26 @@ def yearfeedback(username):
             sub_session_message = "Your overall performance decreased throughout the year."
         year_grade = "With these results your overall grade for the year is: " + gradebandcheck(
             (sub_session1_grade + sub_session2_grade) / 2)
+
+        # Get each individual assessment the logged in student has completed
+        all_student_assessments = pd.read_sql("select name,cgs,contribution,due_date,submitted "
+                                              "from student_summative_assessments "
+                                              "inner join summative_assessment "
+                                              "on summative_assessment.id = summative_assessment_id "
+                                              "where student_id = " + str(student.id), db.engine)
+
+        # Separate written exams and coursework into two lists
+        written_exams = []
+        coursework = []
+        for index, row in all_student_assessments.iterrows():
+            if row['name'] == 'Written Exam':
+                written_exams.append(row['cgs'])
+            else:
+                coursework.append(row['cgs'])
+
+        # Get a rough estimate of the student's overall performance in the two main types of assessment
+        written_exam_average = gradebandcheck(sum(written_exams) / len(written_exams))
+        coursework_average = gradebandcheck(sum(coursework) / len(coursework))
 
         # Retrieve a list of all students in the logged in student's class including themself
         class_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(
@@ -788,7 +830,8 @@ def yearfeedback(username):
                                sub_session2_grade=gradebandcheck(sub_session2_grade),
                                sub_session_message=sub_session_message, year_grade=year_grade, plot_url=plot_url,
                                sub_session1_rank=sub_session1_rank, sub_session2_rank=sub_session2_rank,
-                               prediction=bayes_prediction)
+                               prediction=bayes_prediction,written_exam_average=written_exam_average,
+                               coursework_average=coursework_average)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
