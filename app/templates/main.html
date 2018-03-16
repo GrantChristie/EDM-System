@@ -32,6 +32,8 @@
                                     Feedback</a></li>
                                 <li><a href="{{ url_for('yearfeedback', username=current_user.username) }}">Year
                                     Feedback</a></li>
+                                <li><a href="{{ url_for('coursefeedback', username=current_user.username) }}">Course
+                                    Feedback</a></li>
                             </ul>
                         </li>
                     {% endif %}

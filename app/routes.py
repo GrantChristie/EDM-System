@@ -16,10 +16,10 @@ import math
 import io
 import base64
 import matplotlib
+import bisect
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
@@ -152,9 +152,35 @@ def coursefeedback(username):
                                           "WHERE STUDENT_ID = " + str(student.id) +
                                           "AND COURSE_ID = " + choice, db.engine)
 
+            course_grade = 0
+
+            for index, row in student_results.iterrows():
+                course_grade = course_grade + row['cgs'] * row['contribution']
+            print(course_grade)
+
+            classmates = pd.read_sql("SELECT id, username FROM student where username <> 'admin' and username <> '"
+                                     + student.username + "' and year = " + str(current_user.year)
+                                     + 'and programme_id =' + str(current_user.programme_id), db.engine)
+            classmate_grades = []
+            for id in classmates['id'].values:
+                id = str(id)
+                classmate_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION "
+                                              "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
+                                              "INNER JOIN SUMMATIVE_ASSESSMENT "
+                                              "ON STUDENT_SUMMATIVE_ASSESSMENTS.SUMMATIVE_ASSESSMENT_ID = SUMMATIVE_ASSESSMENT.ID "
+                                              "WHERE STUDENT_ID = " + id +
+                                              "AND COURSE_ID = " + choice, db.engine)
+                grade_total = 0
+                for i, row in classmate_results.iterrows():
+                    grade_total = grade_total + row['cgs'] * row['contribution']
+                classmate_grades.append(grade_total)
+            classmate_grades = (sorted(classmate_grades, key=float, reverse=False))
+            course_rank = ordinal(len(classmate_grades)-bisect.bisect_right(classmate_grades,course_grade)+1)
+            class_size = len(classmate_grades)+1
             return render_template('coursefeedback.html', title='Course Feedback', form=form,
                                    course_info=course_info, course_assessments=course_assessments,
-                                   student_results=student_results)
+                                   student_results=student_results, course_rank=course_rank, class_size=class_size)
+
         #otherwise display the course in progress feedback
         else:
             print("The final assessment has yet to come")

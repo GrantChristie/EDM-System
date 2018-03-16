@@ -25,5 +25,6 @@
         {% for key,value in student_results.iterrows() %}
             <li>{{ value['name'] }}, CGS: {{ value['cgs'] }}</li>
         {% endfor %}
+        You ranked {{ course_rank }} out of your class of {{ class_size }}
     {% endif %}
 {% endblock %}

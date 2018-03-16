@@ -2,7 +2,6 @@ from flask import redirect, url_for, flash
 from sklearn.metrics import accuracy_score
 import numpy as np
 
-
 def admincheck(user):
     if user != 'admin':
         flash("You do not have permission to view this page")
