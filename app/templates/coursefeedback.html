@@ -17,17 +17,28 @@
             <li>Sub Session: {{ value['sub_session'] }}</li>
             <li>Credits: {{ value['credits'] }}</li>
         {% endfor %}
-
-        {% for key,value in course_assessments.iterrows() %}
-            <li>{{ value['name'] }}, Due: {{ value['due_date'] }}</li>
-        {% endfor %}
-        <h3>Results</h3>
-        {% for key,value in student_results.iterrows() %}
-            <li>{{ value['name'] }}, CGS: {{ value['cgs'] }}</li>
-        {% endfor %}
-        You ranked {{ course_rank }} out of your class of {{ class_size }}<br>
-        {% for key,value in assessment_placements.items() %}
-            Your placement for {{ key }} was {{ value }} out of your class of {{ class_size }}<br>
-        {% endfor %}
+    {% endif %}
+    {% if course_assessments is defined %}
+    {% for key,value in course_assessments.iterrows() %}
+        <li>{{ value['name'] }}, Due: {{ value['due_date'] }}</li>
+    {% endfor %}
+    {% endif %}
+    {% if student_results is defined %}
+    <h3>Results</h3>
+    {% for key,value in student_results.iterrows() %}
+        <li>{{ value['name'] }}, CGS: {{ value['cgs'] }}</li>
+    {% endfor %}
+    {% endif %}
+    {% if course_rank is defined %}
+    You ranked {{ course_rank }} out of your class of {{ class_size }}<br>
+    {% endif %}
+    {% if assessment_placements is defined %}
+    {% for key,value in assessment_placements.items() %}
+        Your placement for {{ key }} was {{ value }} out of your class of {{ class_size }}<br>
+    {% endfor %}
+    {% endif %}
+    {% if required_grade_A5 is defined %}
+        To get a A5 you need to score an overall grade of {{ required_grade_A5 }} in the rest of your assessments.<br>
+        To get a B3 you need to score an overall grade of {{ required_grade_B3 }} in the rest of your assessments.
     {% endif %}
 {% endblock %}

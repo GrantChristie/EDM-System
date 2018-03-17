@@ -10,6 +10,8 @@ from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model
 from sklearn.naive_bayes import GaussianNB
+from sympy.solvers import solve
+from sympy import Symbol, Eq
 import datetime
 import pandas as pd
 import math
@@ -17,14 +19,13 @@ import io
 import base64
 import matplotlib
 import bisect
-import time as t
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
-time = datetime.datetime(2014, 11, 15)
+#time = datetime.datetime(2014, 11, 30)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -214,7 +215,25 @@ def coursefeedback(username):
 
         #otherwise display the course in progress feedback
         else:
-            print("The final assessment has yet to come")
+            student_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION "
+                                          "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
+                                          "INNER JOIN SUMMATIVE_ASSESSMENT "
+                                          "ON STUDENT_SUMMATIVE_ASSESSMENTS.SUMMATIVE_ASSESSMENT_ID = SUMMATIVE_ASSESSMENT.ID "
+                                          "WHERE STUDENT_ID = " + str(student.id) +
+                                          "AND COURSE_ID = " + choice +
+                                          "AND SUBMITTED <= '" +time.strftime('%Y-%m-%d') + "'", db.engine)
+            current_weighted_results = []
+            for index, row in student_results.iterrows():
+                current_weighted_results.append(row['cgs']*row['contribution'])
+
+            x = Symbol('x')
+            required_grade_A5 = gradebandcheck(solve(Eq(
+                sum(current_weighted_results) + (1 - sum(student_results['contribution'].values)) * x, 18),"x")[0])
+            required_grade_B3 = gradebandcheck(solve(Eq(
+                sum(current_weighted_results) + (1 - sum(student_results['contribution'].values)) * x, 15), "x")[0])
+            return render_template('coursefeedback.html', title='Course Feedback', form=form, course_info=course_info,
+                                   course_assessments=course_assessments, required_grade_A5=required_grade_A5,
+                                   required_grade_B3=required_grade_B3)
     return render_template('coursefeedback.html', title='Course Feedback', form=form)
 
 
