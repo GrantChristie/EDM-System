@@ -24,17 +24,31 @@ import matplotlib.patches as mpatches
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
-#time = datetime.datetime(2014, 12, 1)
+time = datetime.datetime(2014, 11, 15)
 
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
 @login_required
 def home():
+    time2 = time + datetime.timedelta(days=7)
+    upcoming_formative_assessments = pd.read_sql("SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted is NULL and student_formative_assessments.student_id =" + str(
+            current_user.id) + "and formative_assessment.due_date >='" + time.strftime('%Y-%m-%d') + "' and formative_assessment.due_date <='" + time2.strftime('%Y-%m-%d') + "'", db.engine)
+
+    upcoming_summative_assessments = pd.read_sql("SELECT summative_assessment.name, summative_assessment.due_date, course.course_name from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id = summative_assessment.id inner join course on summative_assessment.course_id = course.id where student_summative_assessments.submitted is NULL and student_summative_assessments.student_id =" + str(
+            current_user.id) + "and summative_assessment.due_date >='" + time.strftime('%Y-%m-%d') + "' and summative_assessment.due_date <='" + time2.strftime('%Y-%m-%d') + "'", db.engine)
+    if upcoming_summative_assessments.empty:
+        upcoming_summative_message = ""
+    else:
+        upcoming_summative_message = "The following summative assessments are due soon:"
+    if upcoming_formative_assessments.empty:
+        upcoming_formative_message = ""
+    else:
+        upcoming_formative_message = "The following formative assessments are due soon:"
     # Get student's overdue formative assessments for each course
     overdue_formative = pd.read_sql(
         "SELECT formative_assessment.name, formative_assessment.due_date, course.course_name from formative_assessment inner join student_formative_assessments on student_formative_assessments.formative_assessment_id = formative_assessment.id inner join course on formative_assessment.course_id = course.id where student_formative_assessments.submitted is NULL and student_formative_assessments.student_id =" + str(
-            current_user.id) + "and formative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
+            current_user.id) + "and formative_assessment.due_date <'" + time.strftime('%Y-%m-%d') + "'", db.engine)
     if overdue_formative.empty:
         formative_message = "You have no overdue formative assessments."
     else:
@@ -42,7 +56,7 @@ def home():
 
     overdue_summative = pd.read_sql(
         "SELECT summative_assessment.name, summative_assessment.due_date, course.course_name from summative_assessment inner join student_summative_assessments on student_summative_assessments.summative_assessment_id = summative_assessment.id inner join course on summative_assessment.course_id = course.id where student_summative_assessments.submitted is NULL and student_summative_assessments.student_id =" + str(
-            current_user.id) + "and summative_assessment.due_date <='" + time.strftime('%Y-%m-%d') + "'", db.engine)
+            current_user.id) + "and summative_assessment.due_date <'" + time.strftime('%Y-%m-%d') + "'", db.engine)
     if overdue_summative.empty:
         summative_message = "You have no overdue summative assessments."
     else:
@@ -50,7 +64,11 @@ def home():
 
     return render_template('home.html', title='Home', time=time, formative_message=formative_message,
                            overdue_formative=overdue_formative, summative_message=summative_message,
-                           overdue_summative=overdue_summative)
+                           overdue_summative=overdue_summative,
+                           upcoming_summative_message=upcoming_summative_message,
+                           upcoming_formative_message=upcoming_formative_message,
+                           upcoming_summative_assessments=upcoming_summative_assessments,
+                           upcoming_formative_assessments=upcoming_formative_assessments)
 
 
 @app.route('/login', methods=['GET', 'POST'])
