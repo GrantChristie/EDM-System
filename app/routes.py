@@ -17,6 +17,7 @@ import io
 import base64
 import matplotlib
 import bisect
+import time as t
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -141,9 +142,9 @@ def coursefeedback(username):
         course_info = pd.read_sql("SELECT * FROM COURSE WHERE ID = " + choice, db.engine)
         course_assessments = pd.read_sql("SELECT * FROM SUMMATIVE_ASSESSMENT where course_id = " + choice, db.engine)
 
-        #Retrieve the latest assessment for that course
+        # Retrieve the latest assessment for that course
         last_assessment = (max(course_assessments['due_date'].values))
-        #If the current time is after the last assessment then display after course feedback
+        # If the current time is after the last assessment then display after course feedback
         if time > datetime.datetime(last_assessment.year, last_assessment.month, last_assessment.day):
             student_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION "
                                           "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
@@ -153,33 +154,45 @@ def coursefeedback(username):
                                           "AND COURSE_ID = " + choice, db.engine)
 
             course_grade = 0
-
             for index, row in student_results.iterrows():
                 course_grade = course_grade + row['cgs'] * row['contribution']
-            print(course_grade)
 
             classmates = pd.read_sql("SELECT id, username FROM student where username <> 'admin' and username <> '"
                                      + student.username + "' and year = " + str(current_user.year)
                                      + 'and programme_id =' + str(current_user.programme_id), db.engine)
             classmate_grades = []
+            all_classmate_results = {}
+            assessment_placements = {}
             for id in classmates['id'].values:
                 id = str(id)
-                classmate_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION "
+                classmate_results = pd.read_sql("SELECT student_id, CGS, NAME, SUBMITTED, CONTRIBUTION "
                                               "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
                                               "INNER JOIN SUMMATIVE_ASSESSMENT "
                                               "ON STUDENT_SUMMATIVE_ASSESSMENTS.SUMMATIVE_ASSESSMENT_ID = SUMMATIVE_ASSESSMENT.ID "
                                               "WHERE STUDENT_ID = " + id +
                                               "AND COURSE_ID = " + choice, db.engine)
+
                 grade_total = 0
                 for i, row in classmate_results.iterrows():
                     grade_total = grade_total + row['cgs'] * row['contribution']
+                    if row['name'] in all_classmate_results:
+                        all_classmate_results[row['name']].append(row['cgs'])
+                    else:
+                        all_classmate_results[row['name']] = [row['cgs']]
                 classmate_grades.append(grade_total)
+
+            for key, value in all_classmate_results.items():
+                row = student_results.loc[student_results['name'] == key]
+                assessment_placements[key] = ordinal((len(value)-bisect.bisect_right(sorted(value),row['cgs'].values[0])+1))
+
             classmate_grades = (sorted(classmate_grades, key=float, reverse=False))
             course_rank = ordinal(len(classmate_grades)-bisect.bisect_right(classmate_grades,course_grade)+1)
             class_size = len(classmate_grades)+1
+
             return render_template('coursefeedback.html', title='Course Feedback', form=form,
                                    course_info=course_info, course_assessments=course_assessments,
-                                   student_results=student_results, course_rank=course_rank, class_size=class_size)
+                                   student_results=student_results, course_rank=course_rank, class_size=class_size,
+                                   assessment_placements=assessment_placements)
 
         #otherwise display the course in progress feedback
         else:
