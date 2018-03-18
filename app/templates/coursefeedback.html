@@ -37,6 +37,11 @@
         Your placement for {{ key }} was {{ value }} out of your class of {{ class_size }}<br>
     {% endfor %}
     {% endif %}
+    {% if poor_early_submissions is defined %}
+        {% for message in poor_early_submissions %}
+            {{ message }}<br>
+        {% endfor %}
+    {% endif %}
     {% if required_grade_A5 is defined %}
         To get a A5 you need to score an overall grade of {{ required_grade_A5 }} in the rest of your assessments.<br>
         To get a B3 you need to score an overall grade of {{ required_grade_B3 }} in the rest of your assessments.

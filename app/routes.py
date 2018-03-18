@@ -146,7 +146,9 @@ def coursefeedback(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
+
     programme = str(student.programme_id)
+    # Get a list of courses the student can select to get feedback for
     courses = pd.read_sql('select course.id, course.course_name, course.level, course.sub_session '
                           'from course inner join programme_courses on programme_courses.course_id=course.id '
                           'where programme_courses.programme_id=' + programme + ' and level <= ' + str(current_user.year)
@@ -165,23 +167,26 @@ def coursefeedback(username):
         last_assessment = (max(course_assessments['due_date'].values))
         # If the current time is after the last assessment then display after course feedback
         if time > datetime.datetime(last_assessment.year, last_assessment.month, last_assessment.day):
-            student_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION "
+            student_results = pd.read_sql("SELECT CGS, NAME, SUBMITTED, CONTRIBUTION, DUE_DATE "
                                           "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
                                           "INNER JOIN SUMMATIVE_ASSESSMENT "
                                           "ON STUDENT_SUMMATIVE_ASSESSMENTS.SUMMATIVE_ASSESSMENT_ID = SUMMATIVE_ASSESSMENT.ID "
                                           "WHERE STUDENT_ID = " + str(student.id) +
                                           "AND COURSE_ID = " + choice, db.engine)
 
+            # Calculate overall grade for the course
             course_grade = 0
             for index, row in student_results.iterrows():
                 course_grade = course_grade + row['cgs'] * row['contribution']
 
+            # Get a list of the ids belongning to the logged in student's classmates
             classmates = pd.read_sql("SELECT id, username FROM student where username <> 'admin' and username <> '"
                                      + student.username + "' and year = " + str(current_user.year)
                                      + 'and programme_id =' + str(current_user.programme_id), db.engine)
             classmate_grades = []
             all_classmate_results = {}
             assessment_placements = {}
+            # For each classmate get their details
             for id in classmates['id'].values:
                 id = str(id)
                 classmate_results = pd.read_sql("SELECT student_id, CGS, NAME, SUBMITTED, CONTRIBUTION "
@@ -191,27 +196,45 @@ def coursefeedback(username):
                                               "WHERE STUDENT_ID = " + id +
                                               "AND COURSE_ID = " + choice, db.engine)
 
+                # Calculate that classmates overall grade
                 grade_total = 0
                 for i, row in classmate_results.iterrows():
                     grade_total = grade_total + row['cgs'] * row['contribution']
+                    # Add the student's assessment result to a dictionary so rankings can be calculated
                     if row['name'] in all_classmate_results:
                         all_classmate_results[row['name']].append(row['cgs'])
                     else:
                         all_classmate_results[row['name']] = [row['cgs']]
                 classmate_grades.append(grade_total)
 
+            # Calculate the logged in student's ranking in each assessment using the binary search algorithm
             for key, value in all_classmate_results.items():
                 row = student_results.loc[student_results['name'] == key]
+                # bisect_right used so in the event of tied scores the student is given the best ranking instead of the worst ranking
                 assessment_placements[key] = ordinal((len(value)-bisect.bisect_right(sorted(value),row['cgs'].values[0])+1))
 
+            # Calculate the logged in student's ranking for the overall course using the binary search algorithm
             classmate_grades = (sorted(classmate_grades, key=float, reverse=False))
+            # bisect_right used so in the event of tied scores the student is given the best ranking instead of the worst ranking
             course_rank = ordinal(len(classmate_grades)-bisect.bisect_right(classmate_grades,course_grade)+1)
             class_size = len(classmate_grades)+1
+
+            # If a student places in the bottom half of the class and has more than 3 days left to submit, add a message to the list.
+            poor_early_submissions = []
+            for i, row in student_results.iterrows():
+                if row['name'] in assessment_placements and row['name'] != "Written Exam":
+                    time_left = abs(row['due_date'] - row['submitted']).days
+                    ranking = int(assessment_placements[row['name']][:-2])
+                    if ranking > 10 and ranking <= 20 and time_left > 3:
+                        poor_early_submissions.append("You scored in the bottom half of your class for " +
+                                                      row['name'] + " and submitted the assessment early " +
+                                                      str(time_left) + " days early.")
 
             return render_template('coursefeedback.html', title='Course Feedback', form=form,
                                    course_info=course_info, course_assessments=course_assessments,
                                    student_results=student_results, course_rank=course_rank, class_size=class_size,
-                                   assessment_placements=assessment_placements)
+                                   assessment_placements=assessment_placements,
+                                   poor_early_submissions=poor_early_submissions)
 
         #otherwise display the course in progress feedback
         else:
@@ -227,6 +250,7 @@ def coursefeedback(username):
                 current_weighted_results.append(row['cgs']*row['contribution'])
 
             x = Symbol('x')
+            # IF THIS EXCEEDS 22/A1 THEN THE STUDENT CANNOT ACHIEVE AN A5 GRADE, ADD CHECK FOR THIS
             required_grade_A5 = gradebandcheck(solve(Eq(
                 sum(current_weighted_results) + (1 - sum(student_results['contribution'].values)) * x, 18),"x")[0])
             required_grade_B3 = gradebandcheck(solve(Eq(
