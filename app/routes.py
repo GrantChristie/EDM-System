@@ -25,7 +25,7 @@ import matplotlib.patches as mpatches
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
-time = datetime.datetime(2014, 11, 30)
+#time = datetime.datetime(2014, 11, 30)
 
 
 @app.route('/', methods=['GET', 'POST'])
