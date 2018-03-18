@@ -25,7 +25,7 @@ import matplotlib.patches as mpatches
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(math.floor(n/10)%10!=1)*(n%10<4)*n%10::4])
 time = datetime.datetime.now()
-#time = datetime.datetime(2014, 11, 30)
+time = datetime.datetime(2014, 11, 30)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -225,7 +225,7 @@ def coursefeedback(username):
                 if row['name'] in assessment_placements and row['name'] != "Written Exam":
                     time_left = abs(row['due_date'] - row['submitted']).days
                     ranking = int(assessment_placements[row['name']][:-2])
-                    if ranking > 10 and ranking <= 20 and time_left > 3:
+                    if 10 < ranking <= 20 and time_left > 3:
                         poor_early_submissions.append("You scored in the bottom half of your class for " +
                                                       row['name'] + " and submitted the assessment early " +
                                                       str(time_left) + " days early.")
@@ -255,9 +255,10 @@ def coursefeedback(username):
                 sum(current_weighted_results) + (1 - sum(student_results['contribution'].values)) * x, 18),"x")[0])
             required_grade_B3 = gradebandcheck(solve(Eq(
                 sum(current_weighted_results) + (1 - sum(student_results['contribution'].values)) * x, 15), "x")[0])
+
             return render_template('coursefeedback.html', title='Course Feedback', form=form, course_info=course_info,
                                    course_assessments=course_assessments, required_grade_A5=required_grade_A5,
-                                   required_grade_B3=required_grade_B3)
+                                   required_grade_B3=required_grade_B3, student_results=student_results)
     return render_template('coursefeedback.html', title='Course Feedback', form=form)
 
 
