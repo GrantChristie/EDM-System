@@ -270,17 +270,65 @@ def programmefeedback(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
+    if student.year == 1:
+        flash("You cannot access this page with only 1 completed year.")
+        return redirect(url_for('home'))
+    else:
+        student_id = str(student.id)
+        student_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
 
-    student_id = str(student.id)
-    student_list = pd.read_sql("SELECT id FROM student where username <> 'admin' and year = " + str(current_user.year) + 'and programme_id =' + str(current_user.programme_id), db.engine)
+        level1grades = []
+        level2grades = []
+        all_student_level1_results = []
 
-    level1grades = []
-    level2grades = []
-    all_student_level1_results = []
+        #start of loop
+        for id in student_list['id'].values:
+            id = str(id)
+            level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                         'sum(contribution * cgs) as course_grade '
+                                         'from student_summative_assessments '
+                                         'inner JOIN summative_assessment '
+                                         'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                         'inner JOIN course '
+                                         'on summative_assessment.course_id = course.id '
+                                         'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                         'AND student_id =' + id + 'and course.level = 1 group by course.id',
+                                         db.engine)
+            total_level1_credits = level_1_scores['credits'].sum()
+            level1_results = []
 
-    #start of loop
-    for id in student_list['id'].values:
-        id = str(id)
+            for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
+                level1_results.append(calculategpa(grade, course_credits, total_level1_credits))
+            level1grade = (sum(level1_results))
+
+            # Prevent second sql statement from running if the student has no first year results
+            if level1grade == 0:
+                continue
+
+            level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
+                                         'sum(contribution * cgs) as course_grade '
+                                         'from student_summative_assessments '
+                                         'inner JOIN summative_assessment '
+                                         'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
+                                         'inner JOIN course '
+                                         'on summative_assessment.course_id = course.id '
+                                         'inner JOIN programme_courses on course.id = programme_courses.course_id '
+                                         'AND student_id =' + id + 'and course.level = 2 group by course.id',
+                                         db.engine)
+
+            total_level2_credits = level_2_scores['credits'].sum()
+            level2_results = []
+            for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
+                level2_results.append(calculategpa(grade, course_credits, total_level2_credits))
+
+            level2grade = (sum(level2_results))
+            if level1grade != 0 or level2grade != 0:
+                level1grades.append(level1grade)
+                level2grades.append(level2grade)
+                all_student_level1_results.append(level1_results)
+        # end of loop
+
+        # logged in student's details
         level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                      'sum(contribution * cgs) as course_grade '
                                      'from student_summative_assessments '
@@ -289,18 +337,15 @@ def programmefeedback(username):
                                      'inner JOIN course '
                                      'on summative_assessment.course_id = course.id '
                                      'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                     'AND student_id =' + id + 'and course.level = 1 group by course.id',
-                                     db.engine)
+                                     'AND student_id =' + student_id + 'and course.level = 1 group by course.id', db.engine)
+
         total_level1_credits = level_1_scores['credits'].sum()
-        level1_results = []
+        student_l1_results = []
 
         for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
-            level1_results.append(calculategpa(grade, course_credits, total_level1_credits))
-        level1grade = (sum(level1_results))
+            student_l1_results.append(calculategpa(grade, course_credits, total_level1_credits))
 
-        # Prevent second sql statement from running if the student has no first year results
-        if level1grade == 0:
-            continue
+        level1grade = gradebandcheck(sum(student_l1_results))
 
         level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
                                      'sum(contribution * cgs) as course_grade '
@@ -310,125 +355,88 @@ def programmefeedback(username):
                                      'inner JOIN course '
                                      'on summative_assessment.course_id = course.id '
                                      'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                     'AND student_id =' + id + 'and course.level = 2 group by course.id',
-                                     db.engine)
+                                     'AND student_id =' + student_id + 'and course.level = 2 group by course.id', db.engine)
 
         total_level2_credits = level_2_scores['credits'].sum()
-        level2_results = []
+        student_l2_results = []
+
         for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
-            level2_results.append(calculategpa(grade, course_credits, total_level2_credits))
+            student_l2_results.append(calculategpa(grade, course_credits, total_level2_credits))
 
-        level2grade = (sum(level2_results))
-        if level1grade != 0 or level2grade != 0:
-            level1grades.append(level1grade)
-            level2grades.append(level2grade)
-            all_student_level1_results.append(level1_results)
-    #end of loop
+        level2grade = gradebandcheck(sum(student_l2_results))
 
-    #logged in student's details
-    level_1_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
-                                 'sum(contribution * cgs) as course_grade '
-                                 'from student_summative_assessments '
-                                 'inner JOIN summative_assessment '
-                                 'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                                 'inner JOIN course '
-                                 'on summative_assessment.course_id = course.id '
-                                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                 'AND student_id =' + student_id + 'and course.level = 1 group by course.id', db.engine)
+        # Calculate a degree classification as if level 1 courses are level 3 and level 2 courses are level 4.
+        # Variables so weightings of each course level can be changed.
+        level_1_weighting = 0.3
+        level_2_weighting = 0.7
+        mock_honours_grade = degreeclassification((sum(student_l1_results) * level_1_weighting) + (sum(student_l2_results) * level_2_weighting))
+        # end of logged in student's details retrieval
 
-    total_level1_credits = level_1_scores['credits'].sum()
-    student_l1_results = []
+        # kmeans start
+        x = np.array(list(zip(level1grades, level2grades)))
+        kmeans = KMeans(n_clusters=5).fit(x)
 
-    for course_credits, grade in zip(level_1_scores['credits'].values, level_1_scores['course_grade'].values):
-        student_l1_results.append(calculategpa(grade, course_credits, total_level1_credits))
+        img = io.BytesIO()
+        plt.clf()
+        plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+        plt.plot(sum(student_l1_results),sum(student_l2_results), 'ko', label='You', markersize=7)
+        plt.xlim(min(level1grades) - 1, 22)
+        plt.ylim(min(level2grades) - 1, 22)
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+        plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black', marker='+')#MAYBE REMOVE IN FINAL VERSION
+        plt.xlabel('Level 1 Grade')
+        plt.ylabel('Level 2 Grade')
+        plt.savefig(img, format='png')
+        img.seek(0)
+        plot_url = base64.b64encode(img.getvalue()).decode()
 
-    level1grade = gradebandcheck(sum(student_l1_results))
+        # kmeans end
 
-    level_2_scores = pd.read_sql('SELECT course.course_name as course_name, credits, '
-                                 'sum(contribution * cgs) as course_grade '
-                                 'from student_summative_assessments '
-                                 'inner JOIN summative_assessment '
-                                 'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
-                                 'inner JOIN course '
-                                 'on summative_assessment.course_id = course.id '
-                                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                                 'AND student_id =' + student_id + 'and course.level = 2 group by course.id', db.engine)
+        # linear regression start
+        x_training = np.array(all_student_level1_results)
+        y_training = np.array(level2grades)
+        x_test = np.array([student_l1_results])
+        lin = linear_model.LinearRegression()
+        lin.fit(x_training, y_training)
+        predictedl2 = gradebandcheck(lin.predict(x_test)[0])
+        testlinearregression(lin, all_student_level1_results, level2grades)
+        # linear regression end
 
-    total_level2_credits = level_2_scores['credits'].sum()
-    student_l2_results = []
+        # bayes start
+        y_training=[]
+        for x in level2grades:
+            y_training.append(gradebandcheck(x))
+        clf = GaussianNB()
+        x_training = np.array(all_student_level1_results)
+        x_test = np.array([student_l1_results])
+        clf.fit(x_training, y_training)
+        bayes_predictedl2 = (clf.predict(x_test)[0])
+        testbayes(all_student_level1_results,level2grades, clf)
+        # bayes end
 
-    for course_credits, grade in zip(level_2_scores['credits'].values, level_2_scores['course_grade'].values):
-        student_l2_results.append(calculategpa(grade, course_credits, total_level2_credits))
+        if predictedl2 > level2grade:
+            predicted_text = "You did better than predicted, well done!"
+        elif predictedl2 < level2grade:
+            predicted_text = "You did worse than predicted."
+        else:
+            predicted_text = "You performed as predicted."
 
-    level2grade = gradebandcheck(sum(student_l2_results))
-    mock_honours_grade = degreeclassification((sum(student_l1_results) * 0.3) + (sum(student_l2_results) * 0.7))
-    #end of logged in student's details retrieval
+        kmeans_prediction = kmeans.predict([[sum(student_l1_results),sum(student_l2_results)]])
+        if kmeans_prediction == kmeans.predict([[max(level1grades),max(level2grades)]]):
+            feedback = "You are in the top performers for both year 1 and year 2, well done!"
+        elif kmeans_prediction == kmeans.predict([[min(level1grades),max(level2grades)]]):
+            feedback = "You have improved from year 1 and are now one of the better performers in year 2."
+        elif kmeans_prediction == kmeans.predict([[min(level1grades),min(level2grades)]]):
+            feedback = "You are in the worst performers for both year 1 and year 2."
+        elif kmeans_prediction == kmeans.predict([[max(level1grades), min(level2grades)]]):
+            feedback = "You performed well in year 1 but your results have gotten worse compared to your peers."
+        else:
+            feedback = "You are performing averagely compared to your peers"
 
-    #kmeans start
-    x = np.array(list(zip(level1grades, level2grades)))
-    kmeans = KMeans(n_clusters=5).fit(x)
-
-    img = io.BytesIO()
-    plt.clf()
-    plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-    plt.plot(sum(student_l1_results),sum(student_l2_results), 'ko', label='You', markersize=7)
-    plt.xlim(min(level1grades) - 1, 22)
-    plt.ylim(min(level2grades) - 1, 22)
-    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-    plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], color='black', marker='+')#MAYBE REMOVE IN FINAL VERSION
-    plt.xlabel('Level 1 Grade')
-    plt.ylabel('Level 2 Grade')
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plot_url = base64.b64encode(img.getvalue()).decode()
-
-    #kmeans end
-
-    #linear regression start
-    x_training = np.array(all_student_level1_results)
-    y_training = np.array(level2grades)
-    x_test = np.array([student_l1_results])
-    lin = linear_model.LinearRegression()
-    lin.fit(x_training, y_training)
-    predictedl2 = gradebandcheck(lin.predict(x_test)[0])
-    testlinearregression(lin, all_student_level1_results, level2grades)
-    #linear regression end
-
-    #bayes start
-    y_training=[]
-    for x in level2grades:
-        y_training.append(gradebandcheck(x))
-    clf = GaussianNB()
-    x_training = np.array(all_student_level1_results)
-    x_test = np.array([student_l1_results])
-    clf.fit(x_training, y_training)
-    bayes_predictedl2 = (clf.predict(x_test)[0])
-    testbayes(all_student_level1_results,level2grades, clf)
-    #bayes end
-
-    if predictedl2 > level2grade:
-        predicted_text = "You did better than predicted, well done!"
-    elif predictedl2 < level2grade:
-        predicted_text = "You did worse than predicted."
-    else:
-        predicted_text = "You performed as predicted."
-
-    kmeans_prediction = kmeans.predict([[sum(student_l1_results),sum(student_l2_results)]])
-    if kmeans_prediction == kmeans.predict([[max(level1grades),max(level2grades)]]):
-        feedback = "You are in the top performers for both year 1 and year 2, well done!"
-    elif kmeans_prediction == kmeans.predict([[min(level1grades),max(level2grades)]]):
-        feedback = "You have improved from year 1 and are now one of the better performers in year 2."
-    elif kmeans_prediction == kmeans.predict([[min(level1grades),min(level2grades)]]):
-        feedback = "You are in the worst performers for both year 1 and year 2."
-    elif kmeans_prediction == kmeans.predict([[max(level1grades), min(level2grades)]]):
-        feedback = "You performed well in year 1 but your results have gotten worse compared to your peers."
-    else:
-        feedback = "You are performing averagely compared to your peers"
-
-    return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
-                           level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
-                           feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text,
-                           bayes_predictedl2=bayes_predictedl2)
+        return render_template('programmefeedback.html', title='Programme Feedback', plot_url=plot_url,
+                               level1grade=level1grade, level2grade=level2grade, mock_honours_grade=mock_honours_grade,
+                               feedback=feedback, predictedl2=predictedl2, predicted_text=predicted_text,
+                               bayes_predictedl2=bayes_predictedl2)
 
 
 @app.route('/formativefeedback/<username>', methods=['GET', 'POST'])
