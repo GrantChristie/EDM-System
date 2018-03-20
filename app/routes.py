@@ -11,7 +11,7 @@ from werkzeug.urls import url_parse
 from sklearn.cluster import KMeans
 from sqlalchemy import text
 from app.helpers import *
-from sklearn import linear_model
+from sklearn import linear_model, tree
 from sklearn.naive_bayes import GaussianNB
 from sympy.solvers import solve
 from sympy import Symbol, Eq
@@ -410,7 +410,7 @@ def programmefeedback(username):
     else:
         student_id = str(student.id)
         student_list = pd.read_sql(
-            "SELECT id FROM student where username <> 'admin' and year = " + str(
+            "SELECT id FROM student where username <> 'admin' and username <> '" + student.username + "' and year = " + str(
                 current_user.year) + 'and programme_id =' + str(
                 current_user.programme_id), db.engine)
 
@@ -472,7 +472,8 @@ def programmefeedback(username):
                 level2grades.append(level2grade)
                 all_student_level1_results.append(level1_results)
         # end of loop
-
+        print(len(all_student_level1_results))
+        print(len(level2grades))
         # logged in student's details
         level_1_scores = pd.read_sql(
             'SELECT course.course_name as course_name, credits, '
@@ -495,7 +496,7 @@ def programmefeedback(username):
             student_l1_results.append(
                 calculategpa(grade, course_credits, total_level1_credits))
 
-        level1grade = gradebandcheck(sum(student_l1_results))
+        level1grade = sum(student_l1_results)
 
         level_2_scores = pd.read_sql(
             'SELECT course.course_name as course_name, credits, '
@@ -518,7 +519,7 @@ def programmefeedback(username):
             student_l2_results.append(
                 calculategpa(grade, course_credits, total_level2_credits))
 
-        level2grade = gradebandcheck(sum(student_l2_results))
+        level2grade = sum(student_l2_results)
 
         # Calculate a degree classification as if level 1 courses are level 3 and level 2 courses are level 4.
         # Variables so weightings of each course level can be changed.
@@ -530,7 +531,11 @@ def programmefeedback(username):
         # end of logged in student's details retrieval
 
         # kmeans start
-        x = np.array(list(zip(level1grades, level2grades)))
+        kmeans_l1 = list(level1grades)
+        kmeans_l2 = list(level2grades)
+        kmeans_l1.append(level1grade)
+        kmeans_l2.append(level2grade)
+        x = np.array(list(zip(kmeans_l1, kmeans_l2)))
         kmeans = KMeans(n_clusters=5).fit(x)
 
         img = io.BytesIO()
@@ -567,14 +572,20 @@ def programmefeedback(username):
         y_training = []
         for x in level2grades:
             y_training.append(gradebandcheck(x))
-        clf = GaussianNB()
+        bayes = GaussianNB()
         x_training = np.array(all_student_level1_results)
         x_test = np.array([student_l1_results])
-        clf.fit(x_training, y_training)
-        bayes_predictedl2 = (clf.predict(x_test)[0])
-        testbayes(all_student_level1_results, level2grades, clf)
+        bayes.fit(x_training, y_training)
+        bayes_predictedl2 = (bayes.predict(x_test)[0])
+        testbayes(all_student_level1_results, level2grades, bayes)
         # bayes end
 
+        decision_tree = tree.DecisionTreeClassifier()
+        decision_tree = decision_tree.fit(x_training, y_training)
+        decision_tree_prediction = decision_tree.predict(x_test)
+        #testdecisiontree(all_student_level1_results, level2grades, decision_tree)
+        level1grade = gradebandcheck(level1grade)
+        level2grade = gradebandcheck(level2grade)
         if predictedl2 > level2grade:
             predicted_text = "You did better than predicted, well done!"
         elif predictedl2 < level2grade:
@@ -601,12 +612,12 @@ def programmefeedback(username):
 
         return render_template('programmefeedback.html',
                                title='Programme Feedback', plot_url=plot_url,
-                               level1grade=level1grade,
-                               level2grade=level2grade,
+                               level1grade=level1grade,level2grade=level2grade,
                                mock_honours_grade=mock_honours_grade,
                                feedback=feedback, predictedl2=predictedl2,
                                predicted_text=predicted_text,
-                               bayes_predictedl2=bayes_predictedl2)
+                               bayes_predictedl2=bayes_predictedl2,
+                               decision_tree_prediction=decision_tree_prediction)
 
 
 @app.route('/formativefeedback/<username>', methods=['GET', 'POST'])

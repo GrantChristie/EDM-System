@@ -145,7 +145,9 @@ def testbayes(all_student_level1_results, level2grades, clf):
     x_test = np.array(all_student_level1_results[:5])
     clf.fit(x_training, y_training)
     preds = clf.predict(x_test)
-    # print(accuracy_score(y_test, preds))
+    """print(x_test)
+    print(preds)
+    print(accuracy_score(y_test, preds))"""
 
 
 def testlinearregression(lin, all_student_level1_results, level2grades):
@@ -163,3 +165,19 @@ def testlinearregression(lin, all_student_level1_results, level2grades):
     for x in y_test:
         y_test2.append(gradebandcheck(x))
     # print(accuracy_score(y_test2, preds2))
+
+
+def testdecisiontree(all_student_level1_results, level2grades, decision_tree):
+    y_training = []
+    y_test = []
+    for x in level2grades[15:]:
+        y_training.append(gradebandcheck(x))
+    for y in level2grades[:5]:
+        y_test.append(gradebandcheck(y))
+    x_training = np.array(all_student_level1_results[15:])
+    x_test = np.array(all_student_level1_results[:5])
+    decision_tree.fit(x_training, y_training)
+    preds = decision_tree.predict(x_test)
+    """print(x_test)
+    print(preds)
+    print(accuracy_score(y_test, preds))"""
