@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.helpers import *
 from sklearn import linear_model, tree
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_network import MLPClassifier
 from sympy.solvers import solve
 from sympy import Symbol, Eq
 import datetime
@@ -472,8 +473,7 @@ def programmefeedback(username):
                 level2grades.append(level2grade)
                 all_student_level1_results.append(level1_results)
         # end of loop
-        print(len(all_student_level1_results))
-        print(len(level2grades))
+
         # logged in student's details
         level_1_scores = pd.read_sql(
             'SELECT course.course_name as course_name, credits, '
@@ -531,6 +531,8 @@ def programmefeedback(username):
         # end of logged in student's details retrieval
 
         # kmeans start
+        # Create copy lists for kmeans that include the logged in student
+        # Mining algorithms require the logged in student to not be included
         kmeans_l1 = list(level1grades)
         kmeans_l2 = list(level2grades)
         kmeans_l1.append(level1grade)
@@ -543,8 +545,8 @@ def programmefeedback(username):
         plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
         plt.plot(sum(student_l1_results), sum(student_l2_results), 'ko',
                  label='You', markersize=7)
-        plt.xlim(min(level1grades) - 1, 22)
-        plt.ylim(min(level2grades) - 1, 22)
+        plt.xlim(min(kmeans_l1) - 1, 22)
+        plt.ylim(min(kmeans_l2) - 1, 22)
         plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2,
                    mode="expand", borderaxespad=0.)
         plt.scatter(kmeans.cluster_centers_[:, 0],
@@ -582,8 +584,15 @@ def programmefeedback(username):
 
         decision_tree = tree.DecisionTreeClassifier()
         decision_tree = decision_tree.fit(x_training, y_training)
-        decision_tree_prediction = decision_tree.predict(x_test)
+        decision_tree_prediction = decision_tree.predict(x_test)[0]
         #testdecisiontree(all_student_level1_results, level2grades, decision_tree)
+
+
+        """"# Hidden layer size = ((Number of inputs + outputs) x 2/3))
+        neural_net = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(2, 1), random_state=1)
+        neural_net.fit(x_training, y_training)
+        neural_net_prediction = neural_net.predict(x_test)[0]"""
+
         level1grade = gradebandcheck(level1grade)
         level2grade = gradebandcheck(level2grade)
         if predictedl2 > level2grade:
@@ -617,7 +626,8 @@ def programmefeedback(username):
                                feedback=feedback, predictedl2=predictedl2,
                                predicted_text=predicted_text,
                                bayes_predictedl2=bayes_predictedl2,
-                               decision_tree_prediction=decision_tree_prediction)
+                               decision_tree_prediction=decision_tree_prediction,
+                               neural_net_prediction=neural_net_prediction)
 
 
 @app.route('/formativefeedback/<username>', methods=['GET', 'POST'])
