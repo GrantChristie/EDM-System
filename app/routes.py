@@ -413,7 +413,7 @@ def programmefeedback(username):
     else:
         student_id = str(student.id)
         student_list = pd.read_sql(
-            "SELECT id FROM student where username <> 'admin' and username <> '" + student.username + "' and year = " + str(
+            "SELECT id, attendance FROM student where username <> 'admin' and username <> '" + student.username + "' and year = " + str(
                 current_user.year) + 'and programme_id =' + str(
                 current_user.programme_id), db.engine)
 
@@ -422,8 +422,10 @@ def programmefeedback(username):
         all_student_level1_results = []
 
         # start of loop
-        for classmate_id in student_list['id'].values:
-            classmate_id = str(classmate_id)
+        for index, row in student_list.iterrows():
+            classmate_id = str(row['id'])
+            classmate_attendance = row['attendance']
+
             level_1_scores = pd.read_sql(
                 'SELECT course.course_name as course_name, credits, '
                 'sum(contribution * cgs) as course_grade '
@@ -468,11 +470,12 @@ def programmefeedback(username):
                                                  'course_grade'].values):
                 level2_results.append(
                     calculategpa(grade, course_credits, total_level2_credits))
-
+            ########level1_results.append()
             level2grade = (sum(level2_results))
             if level1grade != 0 or level2grade != 0:
                 level1grades.append(level1grade)
                 level2grades.append(level2grade)
+                level1_results.append(classmate_attendance)
                 all_student_level1_results.append(level1_results)
         # end of loop
 
@@ -563,6 +566,7 @@ def programmefeedback(username):
         # kmeans end
 
         # linear regression start
+        student_l1_results.append(student.attendance)
         x_training = np.array(all_student_level1_results)
         y_training = np.array(level2grades)
         x_test = np.array([student_l1_results])
@@ -582,6 +586,12 @@ def programmefeedback(username):
         bayes.fit(x_training, y_training)
         bayes_predictedl2 = (bayes.predict(x_test)[0])
         testbayes(all_student_level1_results, level2grades, bayes)
+
+        # If the student did not have perfect attendance, make a new prediction where their attendance is now 100%
+        if student.attendance != 1:
+            student_l1_results[-1] = 1
+            perfect_attendance_x_test = np.array(student_l1_results)
+            perfect_attendance_prediction = bayes.predict(perfect_attendance_x_test[0])
         # bayes end
 
         decision_tree = tree.DecisionTreeClassifier()
@@ -628,7 +638,8 @@ def programmefeedback(username):
                                feedback=feedback, predictedl2=predictedl2,
                                predicted_text=predicted_text,
                                bayes_predictedl2=bayes_predictedl2,
-                               decision_tree_prediction=decision_tree_prediction)
+                               decision_tree_prediction=decision_tree_prediction,
+                               perfect_attendance_prediction=perfect_attendance_prediction)
         """, neural_net_prediction=neural_net_prediction"""
 
 

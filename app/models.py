@@ -49,6 +49,7 @@ class Student(UserMixin, db.Model):
     l_name = db.Column(db.String(40))
     dob = db.Column(db.Date)
     year = db.Column(db.Integer)
+    attendance = db.Column(db.Float)
     programme_id = db.Column(db.Integer, db.ForeignKey('programme.id'))
     student_formative_assessments = db.relationship('FormativeAssessment',
                                                     secondary=student_formative_assessments,
