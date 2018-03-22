@@ -7,7 +7,9 @@
     Your Regression Predicted Level 2 Grade is {{ predictedl2 }}<br>
     Your Bayes Predicted Level 2 Grade is {{ bayes_predictedl2 }}<br>
     Your Decision Tree Predicted Level 2 Grade is {{ decision_tree_prediction }}<br>
-    Your Neural Network Predicted Level 2 Grade is {{ neural_net_prediction }}<br>
+    {% if neural_net_prediction is defined %}
+        Your Neural Network Predicted Level 2 Grade is {{ neural_net_prediction }}<br>
+    {% endif %}
     Your Level 2 Grade is: {{ level2grade }}<br>
     {{ predicted_text }}<br>
     If these two years were your honours years you would have the following final grade degree classification:

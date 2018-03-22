@@ -405,6 +405,8 @@ def programmefeedback(username):
     if current_user.username != student.username:
         flash('You do not have permission to view this page')
         return redirect(url_for('home'))
+
+    # If the student is in 1st year do not allow them to access the page.
     if student.year == 1:
         flash("You cannot access this page with only 1 completed year.")
         return redirect(url_for('home'))
@@ -420,8 +422,8 @@ def programmefeedback(username):
         all_student_level1_results = []
 
         # start of loop
-        for id in student_list['id'].values:
-            id = str(id)
+        for classmate_id in student_list['id'].values:
+            classmate_id = str(classmate_id)
             level_1_scores = pd.read_sql(
                 'SELECT course.course_name as course_name, credits, '
                 'sum(contribution * cgs) as course_grade '
@@ -431,7 +433,7 @@ def programmefeedback(username):
                 'inner JOIN course '
                 'on summative_assessment.course_id = course.id '
                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                'AND student_id =' + id + 'and course.level = 1 group by course.id',
+                'AND student_id =' + classmate_id + 'and course.level = 1 group by course.id',
                 db.engine)
             total_level1_credits = level_1_scores['credits'].sum()
             level1_results = []
@@ -456,7 +458,7 @@ def programmefeedback(username):
                 'inner JOIN course '
                 'on summative_assessment.course_id = course.id '
                 'inner JOIN programme_courses on course.id = programme_courses.course_id '
-                'AND student_id =' + id + 'and course.level = 2 group by course.id',
+                'AND student_id =' + classmate_id + 'and course.level = 2 group by course.id',
                 db.engine)
 
             total_level2_credits = level_2_scores['credits'].sum()
@@ -626,8 +628,8 @@ def programmefeedback(username):
                                feedback=feedback, predictedl2=predictedl2,
                                predicted_text=predicted_text,
                                bayes_predictedl2=bayes_predictedl2,
-                               decision_tree_prediction=decision_tree_prediction,
-                               neural_net_prediction=neural_net_prediction)
+                               decision_tree_prediction=decision_tree_prediction)
+        """, neural_net_prediction=neural_net_prediction"""
 
 
 @app.route('/formativefeedback/<username>', methods=['GET', 'POST'])
