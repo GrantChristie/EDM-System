@@ -567,6 +567,7 @@ def programmefeedback(username):
 
         # linear regression start
         student_l1_results.append(student.attendance)
+
         x_training = np.array(all_student_level1_results)
         y_training = np.array(level2grades)
         x_test = np.array([student_l1_results])
@@ -587,11 +588,6 @@ def programmefeedback(username):
         bayes_predictedl2 = (bayes.predict(x_test)[0])
         testbayes(all_student_level1_results, level2grades, bayes)
 
-        # If the student did not have perfect attendance, make a new prediction where their attendance is now 100%
-        if student.attendance != 1:
-            student_l1_results[-1] = 1
-            perfect_attendance_x_test = np.array(student_l1_results)
-            perfect_attendance_prediction = bayes.predict(perfect_attendance_x_test[0])
         # bayes end
 
         decision_tree = tree.DecisionTreeClassifier()
@@ -630,6 +626,25 @@ def programmefeedback(username):
             feedback = "You performed well in year 1 but your results have gotten worse compared to your peers."
         else:
             feedback = "You are performing averagely compared to your peers"
+
+        # If the student did not have perfect attendance, make a new prediction where their attendance is now 100%
+
+        # Regression version
+        """if student.attendance != 1:
+            student_l1_results[-1] = 1
+            perfect_attendance_x_test = np.array([student_l1_results])
+            perfect_attendance_prediction = lin.predict([perfect_attendance_x_test[0]])
+            perfect_attendance_prediction = gradebandcheck(perfect_attendance_prediction[0])
+        else:
+            perfect_attendance_prediction = """""
+
+        # Bayes Version
+        """if student.attendance != 1:
+            student_l1_results[-1] = 1
+            perfect_attendance_x_test = np.array(student_l1_results)
+            perfect_attendance_prediction = bayes.predict(perfect_attendance_x_test[0])
+        else:
+            perfect_attendance_prediction = """""
 
         return render_template('programmefeedback.html',
                                title='Programme Feedback', plot_url=plot_url,
