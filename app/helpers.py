@@ -134,6 +134,54 @@ def gradetocgs(grade):
         return 0
 
 
+def gradetopercentage(grade):
+    if 21.5 <= grade <= 22.0:
+        return 1
+    elif 20.5 <= grade <= 21.49:
+        return 0.9
+    elif 19.5 <= grade <= 20.49:
+        return 0.85
+    elif 18.5 <= grade <= 19.49:
+        return 0.8
+    elif 17.5 <= grade <= 18.49:
+        return 0.75
+    elif 16.5 <= grade <= 17.49:
+        return 0.7
+    elif 15.5 <= grade <= 16.49:
+        return 0.66
+    elif 14.5 <= grade <= 15.49:
+        return 0.63
+    elif 13.5 <= grade <= 14.49:
+        return 0.6
+    elif 12.5 <= grade <= 13.49:
+        return 0.56
+    elif 11.5 <= grade <= 12.49:
+        return 0.53
+    elif 10.5 <= grade <= 11.49:
+        return 0.5
+    elif 9.5 <= grade <= 10.49:
+        return 0.46
+    elif 8.5 <= grade <= 9.49:
+        return 0.43
+    elif 7.5 <= grade <= 8.49:
+        return 0.4
+    elif 6.5 <= grade <= 7.49:
+        return 0.37
+    elif 5.5 <= grade <= 6.49:
+        return 0.35
+    elif 4.5 <= grade <= 5.49:
+        return 0.3
+    elif 3.5 <= grade <= 4.49:
+        return 0.25
+    elif 2.5 <= grade <= 3.49:
+        return 0.2
+    elif 1.5 <= grade <= 2.49:
+        return 0.15
+    elif 0.5 <= grade <= 1.49:
+        return 0.1
+    else:
+        return 0.05
+
 def testbayes(all_student_level1_results, level2grades, clf):
     y_training = []
     y_test = []

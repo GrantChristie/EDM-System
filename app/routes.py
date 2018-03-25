@@ -479,10 +479,17 @@ def programmefeedback(username):
                 all_student_level1_results.append(level1_results)
         # end of loop
 
+        academic_excellence_score = []
+        critical_thinking_score = []
+        active_citizenship_score = []
+        learning_personal_development_score = []
+
         # logged in student's details
         level_1_scores = pd.read_sql(
             'SELECT course.course_name as course_name, credits, '
-            'sum(contribution * cgs) as course_grade '
+            'sum(contribution * cgs) as course_grade, sum(academic_excellence) as academic_excellence,'
+            'sum(active_citizenship) as active_citizenship, sum(critical_thinking) as critical_thinking,'
+            'sum(learning_personal_development) as learning_personal_development '
             'from student_summative_assessments '
             'inner JOIN summative_assessment '
             'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
@@ -501,11 +508,42 @@ def programmefeedback(username):
             student_l1_results.append(
                 calculategpa(grade, course_credits, total_level1_credits))
 
+        # Get the values of the student's grades and graduate attributes for each course
+        level1_course_grades = np.array(level_1_scores['course_grade'].values)
+        level1_academic_excellence = np.array(
+            level_1_scores['academic_excellence'].values)
+        level1_active_citizenship = np.array(
+            level_1_scores['active_citizenship'].values)
+        level1_critical_thinking = np.array(
+            level_1_scores['critical_thinking'].values)
+        level1_learning_personal_development = np.array(
+            level_1_scores['learning_personal_development'].values)
+
+        # Convert each grade to it's percentage equivalent
+        level1_course_grades = [gradetopercentage(x) for x in
+                                level1_course_grades]
+
+        # Calculate the level 1 percentage of each graduate attribute and add it to the corresponding list
+        academic_excellence_score.append(
+            sum(level1_course_grades * level1_academic_excellence) / sum(
+                level1_academic_excellence))
+        critical_thinking_score.append(
+            sum(level1_course_grades * level1_critical_thinking) / sum(
+                level1_critical_thinking))
+        active_citizenship_score.append(
+            sum(level1_course_grades * level1_active_citizenship) / sum(
+                level1_active_citizenship))
+        learning_personal_development_score.append(sum(
+            level1_course_grades * level1_learning_personal_development) / sum(
+            level1_learning_personal_development))
+
         level1grade = sum(student_l1_results)
 
         level_2_scores = pd.read_sql(
             'SELECT course.course_name as course_name, credits, '
-            'sum(contribution * cgs) as course_grade '
+            'sum(contribution * cgs) as course_grade, sum(academic_excellence) as academic_excellence,'
+            'sum(active_citizenship) as active_citizenship, sum(critical_thinking) as critical_thinking,'
+            'sum(learning_personal_development) as learning_personal_development ' 
             'from student_summative_assessments '
             'inner JOIN summative_assessment '
             'on student_summative_assessments.summative_assessment_id = summative_assessment.id '
@@ -523,6 +561,47 @@ def programmefeedback(username):
                                              'course_grade'].values):
             student_l2_results.append(
                 calculategpa(grade, course_credits, total_level2_credits))
+
+        # Get the values of the student's grades and graduate attributes for each course
+        level2_course_grades = np.array(level_2_scores['course_grade'].values)
+        level2_academic_excellence = np.array(
+            level_2_scores['academic_excellence'].values)
+        level2_active_citizenship = np.array(
+            level_2_scores['active_citizenship'].values)
+        level2_critical_thinking = np.array(
+            level_2_scores['critical_thinking'].values)
+        level2_learning_personal_development = np.array(
+            level_2_scores['learning_personal_development'].values)
+
+        # Convert each grade to it's percentage equivalent
+        level2_course_grades = [gradetopercentage(x) for x in
+                                level2_course_grades]
+
+        # Calculate the level 2 percentage of each graduate attribute and add it to the corresponding list
+        academic_excellence_score.append(
+            sum(level2_course_grades * level2_academic_excellence) / sum(
+                level2_academic_excellence))
+        critical_thinking_score.append(
+            sum(level2_course_grades * level2_critical_thinking) / sum(
+                level2_critical_thinking))
+        active_citizenship_score.append(
+            sum(level2_course_grades * level2_active_citizenship) / sum(
+                level2_active_citizenship))
+        learning_personal_development_score.append(sum(
+            level2_course_grades * level2_learning_personal_development) / sum(
+            level2_learning_personal_development))
+
+        # Create a dictionary to store the total percentages of each graduate attribute for easy display on web page
+        graduate_attributes = {'Academic Excellence': round(
+            sum(academic_excellence_score) / len(academic_excellence_score),
+            2) * 100, 'Critical Thinking': round(
+            sum(critical_thinking_score) / len(critical_thinking_score),
+            2) * 100, 'Learning & Personal Development': round(
+            sum(learning_personal_development_score) / len(
+                learning_personal_development_score), 2) * 100,
+                               'Active Citizenship': round(
+                                   sum(active_citizenship_score) / len(
+                                       active_citizenship_score), 2) * 100}
 
         level2grade = sum(student_l2_results)
 
@@ -639,12 +718,12 @@ def programmefeedback(username):
             perfect_attendance_prediction = """""
 
         # Bayes Version
-        """if student.attendance != 1:
+        if student.attendance != 1:
             student_l1_results[-1] = 1
             perfect_attendance_x_test = np.array(student_l1_results)
             perfect_attendance_prediction = bayes.predict(perfect_attendance_x_test[0])
         else:
-            perfect_attendance_prediction = """""
+            perfect_attendance_prediction = ""
 
         return render_template('programmefeedback.html',
                                title='Programme Feedback', plot_url=plot_url,
@@ -654,8 +733,8 @@ def programmefeedback(username):
                                predicted_text=predicted_text,
                                bayes_predictedl2=bayes_predictedl2,
                                decision_tree_prediction=decision_tree_prediction,
-                               perfect_attendance_prediction=perfect_attendance_prediction)
-        """, neural_net_prediction=neural_net_prediction"""
+                               perfect_attendance_prediction=perfect_attendance_prediction[0],
+                               graduate_attributes=graduate_attributes)
 
 
 @app.route('/formativefeedback/<username>', methods=['GET', 'POST'])

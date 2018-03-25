@@ -110,10 +110,10 @@ class SummativeAssessment(db.Model):
     due_date = db.Column(db.Date)
     contribution = db.Column(db.Float)
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
-    academic_skills = db.Column(db.Float)
-    professional_skills = db.Column(db.Float)
-    it_skills = db.Column(db.Float)
-    library_skills = db.Column(db.Float)
+    academic_excellence = db.Column(db.Integer)
+    critical_thinking = db.Column(db.Integer)
+    learning_personal_development = db.Column(db.Integer)
+    active_citizenship = db.Column(db.Integer)
 
     def __repr__(self):
         return '<Summative Assessment {}>'.format(self.name)

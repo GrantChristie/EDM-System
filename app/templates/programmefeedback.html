@@ -6,14 +6,20 @@
     Your Level 1 Grade is: {{ level1grade }}<br>
     Your Regression Predicted Level 2 Grade is {{ predictedl2 }}<br>
     Your Bayes Predicted Level 2 Grade is {{ bayes_predictedl2 }}<br>
-    If you had perfect attendance your predicted grade would have been {{ perfect_attendance_prediction }}<br>
-    Your Decision Tree Predicted Level 2 Grade is {{ decision_tree_prediction }}<br>
-    {% if neural_net_prediction is defined %}
-        Your Neural Network Predicted Level 2 Grade is {{ neural_net_prediction }}<br>
-    {% endif %}
+    If you had perfect attendance your predicted grade would have been
+    {{ perfect_attendance_prediction }}<br>
+    Your Decision Tree Predicted Level 2 Grade is
+    {{ decision_tree_prediction }}<br>
     Your Level 2 Grade is: {{ level2grade }}<br>
     {{ predicted_text }}<br>
-    If these two years were your honours years you would have the following final grade degree classification:
+    If these two years were your honours years you would have the following
+    final grade degree classification:
     <b>{{ mock_honours_grade }}</b><br>
     {{ feedback }}
+    <p>
+        <h4>Graduate Attributes</h4>
+        {% for key,value in graduate_attributes.items() %}
+            <li>{{ key }} {{ value }}%</li>
+        {% endfor %}
+    </p>
 {% endblock %}
