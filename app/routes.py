@@ -721,7 +721,7 @@ def programmefeedback(username):
         if student.attendance != 1:
             student_l1_results[-1] = 1
             perfect_attendance_x_test = np.array(student_l1_results)
-            perfect_attendance_prediction = bayes.predict(perfect_attendance_x_test[0])
+            perfect_attendance_prediction = bayes.predict(perfect_attendance_x_test[0])[0]
         else:
             perfect_attendance_prediction = ""
 
@@ -733,7 +733,7 @@ def programmefeedback(username):
                                predicted_text=predicted_text,
                                bayes_predictedl2=bayes_predictedl2,
                                decision_tree_prediction=decision_tree_prediction,
-                               perfect_attendance_prediction=perfect_attendance_prediction[0],
+                               perfect_attendance_prediction=perfect_attendance_prediction,
                                graduate_attributes=graduate_attributes)
 
 

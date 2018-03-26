@@ -6,8 +6,13 @@
     Your Level 1 Grade is: {{ level1grade }}<br>
     Your Regression Predicted Level 2 Grade is {{ predictedl2 }}<br>
     Your Bayes Predicted Level 2 Grade is {{ bayes_predictedl2 }}<br>
-    If you had perfect attendance your predicted grade would have been
-    {{ perfect_attendance_prediction }}<br>
+    {% if perfect_attendance_prediction != "" %}
+        If you had perfect attendance your predicted grade would have been
+        {{ perfect_attendance_prediction }}
+    {% else %} You had perfect
+        attendance, well done!
+    {% endif %}
+    <br>
     Your Decision Tree Predicted Level 2 Grade is
     {{ decision_tree_prediction }}<br>
     Your Level 2 Grade is: {{ level2grade }}<br>
@@ -17,9 +22,9 @@
     <b>{{ mock_honours_grade }}</b><br>
     {{ feedback }}
     <p>
-        <h4>Graduate Attributes</h4>
-        {% for key,value in graduate_attributes.items() %}
-            <li>{{ key }} {{ value }}%</li>
-        {% endfor %}
+    <h4>Graduate Attributes</h4>
+    {% for key,value in graduate_attributes.items() %}
+        <li>{{ key }} {{ value }}%</li>
+    {% endfor %}
     </p>
 {% endblock %}
