@@ -295,15 +295,16 @@ def coursefeedback(username):
             classmate_grades = []
             all_classmate_results = {}
             assessment_placements = {}
+
             # For each classmate get their details
-            for id in classmates['id'].values:
-                id = str(id)
+            for classmate_id in classmates['id'].values:
+                classmate_id = str(classmate_id)
                 classmate_results = pd.read_sql(
                     "SELECT student_id, CGS, NAME, SUBMITTED, CONTRIBUTION "
                     "FROM STUDENT_SUMMATIVE_ASSESSMENTS "
                     "INNER JOIN SUMMATIVE_ASSESSMENT "
                     "ON STUDENT_SUMMATIVE_ASSESSMENTS.SUMMATIVE_ASSESSMENT_ID = SUMMATIVE_ASSESSMENT.ID "
-                    "WHERE STUDENT_ID = " + id +
+                    "WHERE STUDENT_ID = " + classmate_id +
                     "AND COURSE_ID = " + choice, db.engine)
 
                 # Calculate that classmates overall grade
@@ -327,26 +328,24 @@ def coursefeedback(username):
                                                  row['cgs'].values[0]) + 1))
 
             # Calculate the logged in student's ranking for the overall course using the binary search algorithm
-            classmate_grades = (
-            sorted(classmate_grades, key=float, reverse=False))
+            classmate_grades = (sorted(classmate_grades, key=float, reverse=False))
+
             # bisect_right used so in the event of tied scores the student is given the best ranking instead of the worst ranking
             course_rank = ordinal(
-                len(classmate_grades) - bisect.bisect_right(classmate_grades,
-                                                            course_grade) + 1)
+                len(classmate_grades) - bisect.bisect_right(classmate_grades, course_grade) + 1)
+
             class_size = len(classmate_grades) + 1
 
             # If a student places in the bottom half of the class and has more than 3 days left to submit, add a message to the list.
             poor_early_submissions = []
             for i, row in student_results.iterrows():
-                if row['name'] in assessment_placements and row[
-                    'name'] != "Written Exam":
+                if row['name'] in assessment_placements and row['name'] != "Written Exam":
                     time_left = abs(row['due_date'] - row['submitted']).days
                     ranking = int(assessment_placements[row['name']][:-2])
                     if 10 < ranking <= 20 and time_left > 3:
                         poor_early_submissions.append(
                             "You scored in the bottom half of your class for " +
-                            row[
-                                'name'] + " and submitted the assessment early " +
+                            row['name'] + " and submitted the assessment early " +
                             str(time_left) + " days early.")
 
             return render_template('coursefeedback.html',
@@ -440,6 +439,7 @@ def programmefeedback(username):
             total_level1_credits = level_1_scores['credits'].sum()
             level1_results = []
 
+            # For each course grade and credit pair, calculate teh GPA for that student's course and add it to a list
             for course_credits, grade in zip(level_1_scores['credits'].values,
                                              level_1_scores[
                                                  'course_grade'].values):
@@ -465,12 +465,14 @@ def programmefeedback(username):
 
             total_level2_credits = level_2_scores['credits'].sum()
             level2_results = []
+
+            # For each course grade and credit pair, calculate teh GPA for that student's course and add it to a list
             for course_credits, grade in zip(level_2_scores['credits'].values,
                                              level_2_scores[
                                                  'course_grade'].values):
                 level2_results.append(
                     calculategpa(grade, course_credits, total_level2_credits))
-            ########level1_results.append()
+
             level2grade = (sum(level2_results))
             if level1grade != 0 or level2grade != 0:
                 level1grades.append(level1grade)
@@ -502,13 +504,14 @@ def programmefeedback(username):
         total_level1_credits = level_1_scores['credits'].sum()
         student_l1_results = []
 
+        # For each course grade and credit pair, calculate teh GPA for that student's course and add it to a list
         for course_credits, grade in zip(level_1_scores['credits'].values,
                                          level_1_scores[
                                              'course_grade'].values):
             student_l1_results.append(
                 calculategpa(grade, course_credits, total_level1_credits))
 
-        # Get the values of the student's grades and graduate attributes for each course
+        # Get the values of the student's grades and graduate attributes for each course in level 1
         level1_course_grades = np.array(level_1_scores['course_grade'].values)
         level1_academic_excellence = np.array(
             level_1_scores['academic_excellence'].values)
@@ -539,6 +542,7 @@ def programmefeedback(username):
 
         level1grade = sum(student_l1_results)
 
+        # Get the values of the student's grades and graduate attributes for each course in level 2
         level_2_scores = pd.read_sql(
             'SELECT course.course_name as course_name, credits, '
             'sum(contribution * cgs) as course_grade, sum(academic_excellence) as academic_excellence,'
@@ -556,6 +560,7 @@ def programmefeedback(username):
         total_level2_credits = level_2_scores['credits'].sum()
         student_l2_results = []
 
+        # For each course grade and credit pair, calculate teh GPA for that student's course and add it to a list
         for course_credits, grade in zip(level_2_scores['credits'].values,
                                          level_2_scores[
                                              'course_grade'].values):
@@ -606,7 +611,7 @@ def programmefeedback(username):
         level2grade = sum(student_l2_results)
 
         # Calculate a degree classification as if level 1 courses are level 3 and level 2 courses are level 4.
-        # Variables so weightings of each course level can be changed.
+        # Variables used so weightings of each course level can be changed.
         level_1_weighting = 0.3
         level_2_weighting = 0.7
         mock_honours_grade = degreeclassification(
@@ -623,25 +628,44 @@ def programmefeedback(username):
         kmeans_l2.append(level2grade)
         x = np.array(list(zip(kmeans_l1, kmeans_l2)))
         kmeans = KMeans(n_clusters=5).fit(x)
+        # Set colours for the 5 clusters
+        color = ['red' if x == kmeans.predict([[min(level1grades), min(level2grades)]])
+                 else 'green' if x == kmeans.predict([[max(level1grades), max(level2grades)]])
+                 else 'orange' if x == kmeans.predict([[min(level1grades), max(level2grades)]])
+                 else 'pink' if x == kmeans.predict([[max(level1grades), min(level2grades)]])
+                 else 'blue' for x in kmeans.labels_]
 
         img = io.BytesIO()
         plt.clf()
-        plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
-        plt.plot(sum(student_l1_results), sum(student_l2_results), 'ko',
-                 label='You', markersize=7)
-        plt.xlim(min(kmeans_l1) - 1, 22)
-        plt.ylim(min(kmeans_l2) - 1, 22)
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2,
-                   mode="expand", borderaxespad=0.)
+        plt.scatter(x[:, 0], x[:, 1], c=color)
         plt.scatter(kmeans.cluster_centers_[:, 0],
                     kmeans.cluster_centers_[:, 1], color='black',
                     marker='+')  # MAYBE REMOVE IN FINAL VERSION
+        plt.plot(sum(student_l1_results), sum(student_l2_results), 'ko', markersize=7)
+
+        # Create the legend handles for each cluster colour
+        you_patch = mpatches.Patch(color='black', label='You')
+        outline_a = mpatches.Patch(color='pink', label='Good level 1 Poor Level 2 Group')
+        average = mpatches.Patch(color='blue', label='Average Group')
+        top = mpatches.Patch(color='green', label='Top Group')
+        outline_b = mpatches.Patch(color='orange', label='Poor level 1 Good Level 2 Group')
+        bottom = mpatches.Patch(color='red', label='Bottom Group')
+        legend = plt.legend(loc='upper center',
+                            bbox_to_anchor=(0.5, 1.20),
+                            ncol=2, fancybox=True, shadow=True,
+                            handles=[you_patch, top,
+                                     average, bottom,
+                                     outline_a, outline_b])
+
+        plt.xlim(min(kmeans_l1) - 1, 22)
+        plt.ylim(min(kmeans_l2) - 1, 22)
         plt.xlabel('Level 1 Grade')
         plt.ylabel('Level 2 Grade')
-        plt.savefig(img, format='png')
+        plt.tight_layout()
+        plt.savefig(img, bbox_extra_artists=(legend,),
+                    bbox_inches='tight', format='png')
         img.seek(0)
         plot_url = base64.b64encode(img.getvalue()).decode()
-
         # kmeans end
 
         # linear regression start
@@ -672,7 +696,7 @@ def programmefeedback(username):
         decision_tree = tree.DecisionTreeClassifier()
         decision_tree = decision_tree.fit(x_training, y_training)
         decision_tree_prediction = decision_tree.predict(x_test)[0]
-        #testdecisiontree(all_student_level1_results, level2grades, decision_tree)
+        # testdecisiontree(all_student_level1_results, level2grades, decision_tree)
 
 
         """"# Hidden layer size = ((Number of inputs + outputs) x 2/3))
@@ -689,8 +713,9 @@ def programmefeedback(username):
         else:
             predicted_text = "You performed as predicted."
 
-        kmeans_prediction = kmeans.predict(
-            [[sum(student_l1_results), sum(student_l2_results)]])
+        kmeans_prediction = kmeans.predict([[sum(student_l1_results),
+                                             sum(student_l2_results)]])
+
         if kmeans_prediction == kmeans.predict(
                 [[max(level1grades), max(level2grades)]]):
             feedback = "You are in the top performers for both year 1 and year 2, well done!"
