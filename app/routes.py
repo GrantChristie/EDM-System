@@ -24,7 +24,7 @@ import base64
 import matplotlib
 import bisect
 
-# For Heroku deployment matplotlib must be imported in this way.
+# For Heroku deployment, matplotlib must be imported in this way.
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -375,11 +375,15 @@ def coursefeedback(username):
                     row['cgs'] * row['contribution'])
 
             x = Symbol('x')
-            # IF THIS EXCEEDS 22/A1 THEN THE STUDENT CANNOT ACHIEVE AN A5 GRADE, ADD CHECK FOR THIS
-            required_grade_A5 = gradebandcheck(solve(Eq(
-                sum(current_weighted_results) + (
+            # Calculate required grades for A5 and B3 overall attainment
+            # If the required grade for an A5 if more than 22 then the student cannot an A5
+            required_grade_A5 = solve(Eq(sum(current_weighted_results) + (
                         1 - sum(student_results['contribution'].values)) * x,
-                18), "x")[0])
+                18), "x")[0]
+            if required_grade_A5 > 22:
+                required_grade_A5 = "N/A"
+            else:
+                required_grade_A5 = gradebandcheck(required_grade_A5)
             required_grade_B3 = gradebandcheck(solve(Eq(
                 sum(current_weighted_results) + (
                         1 - sum(student_results['contribution'].values)) * x,
@@ -780,6 +784,7 @@ def formativefeedback(username):
         'where programme_courses.programme_id=' + programme + ' and level <= ' + str(
             current_user.year)
         + 'order by course.level, course.sub_session', db.engine)
+
     course_ids = courses['id'].values
     course_names = courses['course_name'].values
 
