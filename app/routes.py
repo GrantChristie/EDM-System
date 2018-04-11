@@ -39,7 +39,7 @@ time = datetime.datetime.now()
 
 
 # Can be set to other dates for testing
-# time = datetime.datetime(2014, 11, 30)
+#time = datetime.datetime(2014, 11, 30)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -384,10 +384,15 @@ def coursefeedback(username):
                 required_grade_A5 = "N/A"
             else:
                 required_grade_A5 = gradebandcheck(required_grade_A5)
-            required_grade_B3 = gradebandcheck(solve(Eq(
+
+            required_grade_B3 = solve(Eq(
                 sum(current_weighted_results) + (
                         1 - sum(student_results['contribution'].values)) * x,
-                15), "x")[0])
+                15), "x")[0]
+            if required_grade_B3 > 22:
+                required_grade_B3 = "N/A"
+            else:
+                required_grade_B3 = gradebandcheck(required_grade_B3)
 
             return render_template('coursefeedback.html',
                                    title='Course Feedback', form=form,

@@ -50,7 +50,11 @@
             To get a A5 you need to score an overall grade of
             {{ required_grade_A5 }} in the rest of your assessments.<br>
         {% endif %}
-        To get a B3 you need to score an overall grade of
-        {{ required_grade_B3 }} in the rest of your assessments.
+        {% if required_grade_B3 == "N/A" %}
+            You cannot achieve an B3 grade with the grades you currently have<br>
+        {% else %}
+            To get a B3 you need to score an overall grade of
+            {{ required_grade_B3 }} in the rest of your assessments.<br>
+        {% endif %}
     {% endif %}
 {% endblock %}
