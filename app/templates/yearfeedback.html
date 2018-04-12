@@ -11,6 +11,7 @@
     </div><br>
     {% endif %}
     {% if sub_session1_grade is defined %}
+        <h4><b>General Feedback</b></h4>
         Your Average grade in sub session 1 was: {{ sub_session1_grade }}<br>
     {% endif %}
     {% if sub_session2_grade is defined %}
@@ -23,8 +24,10 @@
         With these results your overall grade for the year is: {{ year_grade }}<br>
     {% endif %}
     {% if coursework_average is defined and written_exam_average is defined %}
+        <h4><b>Assessment Type Performance</b></h4>
         Your performance in written exams alone would result in the following grade for the year: {{ written_exam_average }}<br>
         Your performance in coursework alone would result in the following grade for the year: {{ coursework_average }}<br>
+        {{ type_message }}<br><br>
     {% endif %}
     {% if prediction is defined %}
         Based on your year 1 results your predicted year 2 grade based on previous classes is: {{ prediction }}<br>
@@ -33,6 +36,7 @@
         <p><img src="data:image/png;base64, {{ plot_url }}"></p>
     {% endif %}
     {% if sub_session1_rank is defined %}
+        <h4><b>Rankings</b></h4>
         {{ sub_session1_rank }}<br>
     {% endif %}
     {% if sub_session2_rank is defined %}

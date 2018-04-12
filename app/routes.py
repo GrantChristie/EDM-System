@@ -993,7 +993,7 @@ def yearfeedback(username):
             class_session1_grades = pd.DataFrame(columns=['id', 'grade'])
             class_session2_grades = pd.DataFrame(columns=['id', 'grade'])
             choice = str(form.year.data)
-            # ADD CHECK TO SQL SO IT RETRIEVES SUBMITTED VALUES THAT ARE NOT NULL
+            
             student_year_results = pd.read_sql(
                 'SELECT course.course_name as course_name, credits, sub_session, '
                 'sum(contribution * cgs) as course_grade '
@@ -1060,7 +1060,9 @@ def yearfeedback(username):
                 "from student_summative_assessments "
                 "inner join summative_assessment "
                 "on summative_assessment.id = summative_assessment_id "
-                "where student_id = " + str(student.id), db.engine)
+                "inner JOIN course "
+                "on summative_assessment.course_id = course.id "
+                "where student_id = " + str(student.id) + " and course.level = " + choice, db.engine)
 
             # Separate written exams and coursework into two lists
             written_exams = []
@@ -1179,6 +1181,19 @@ def yearfeedback(username):
                     0] + 1) + " out of your " + str(
                 len(class_list)) + " classmates for sub session 2."
 
+            if abs(gradetocgs(coursework_average)-gradetocgs(written_exam_average)) < 3:
+                type_message = "There is no clear difference between your exam " \
+                               "and coursework grades, you should continue to " \
+                               "spend equal amount of time on each type of assessment."
+            elif gradetocgs(coursework_average)-gradetocgs(written_exam_average) >= 3:
+                type_message = "Your coursework grades are much higher than your" \
+                               " exam grades, you should spend more time revising" \
+                               " the course material throughout the term to prepare for the exam."
+            else:
+                type_message = "Your exam grades are much higher than your " \
+                               "coursework grades, you should spend more time " \
+                               "working on your coursework in future to improve your grades."
+
             return render_template('yearfeedback.html',
                                    title='Year ' + choice + ' Feedback',
                                    form=form,
@@ -1191,7 +1206,8 @@ def yearfeedback(username):
                                    sub_session1_rank=sub_session1_rank,
                                    sub_session2_rank=sub_session2_rank,
                                    written_exam_average=written_exam_average,
-                                   coursework_average=coursework_average)
+                                   coursework_average=coursework_average,
+                                   type_message=type_message)
         else:
             return render_template('yearfeedback.html', title='Year Feedback',
                                    form=form)
