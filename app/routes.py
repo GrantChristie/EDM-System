@@ -39,8 +39,7 @@ time = datetime.datetime.now()
 
 
 # Can be set to other dates for testing
-#time = datetime.datetime(2014, 11, 30)
-
+#time = datetime.datetime(2014, 11, 20)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
@@ -993,7 +992,7 @@ def yearfeedback(username):
             class_session1_grades = pd.DataFrame(columns=['id', 'grade'])
             class_session2_grades = pd.DataFrame(columns=['id', 'grade'])
             choice = str(form.year.data)
-            
+
             student_year_results = pd.read_sql(
                 'SELECT course.course_name as course_name, credits, sub_session, '
                 'sum(contribution * cgs) as course_grade '

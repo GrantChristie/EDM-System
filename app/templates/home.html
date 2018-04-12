@@ -2,8 +2,8 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <h1>Hi, {{ current_user.username }}!</h1>
-    Current Time: {{ time }}<br>
+    <h1>Home</h1>
+    <h4><b>Overdue Assessments</b></h4>
     {{ formative_message }}<br>
     {% if formative_message == "The following formative assessments are overdue:" %}
         <ul>
@@ -22,6 +22,7 @@
     {% endif %}
     {% if upcoming_formative_message == "" %}
     {% else %}
+        <h4><b>Upcoming Formative Assessments</b></h4>
         {{ upcoming_formative_message }}
         <ul>
             {% for key,value in upcoming_formative_assessments.iterrows() %}
@@ -31,6 +32,7 @@
     {% endif %}
     {% if upcoming_summative_message == "" %}
     {% else %}
+        <h4><b>Upcoming Summative Assessments</b></h4>
         {{ upcoming_summative_message }}
         <ul>
             {% for key,value in upcoming_summative_assessments.iterrows() %}

@@ -2,8 +2,8 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <h1>Details for {{ student.username }}</h1>
-    <h3>General Information</h3>
+    <h1>Details for {{ student.f_name }} {{ student.l_name }}</h1>
+    <h4><b>General Information</b></h4>
     <p>
     <ul>
      {% for key,value in details.iterrows() %}
@@ -16,7 +16,7 @@
     </ul>
     </p>
     <p>
-    <h3>Enrolled Courses</h3>
+    <h4><b>Enrolled Courses</b></h4>
     <ul style="list-style-type:none">
             {% for course in courses %}
                 <li>{{ course[1] }}</li>
