@@ -1156,9 +1156,12 @@ def yearfeedback(username):
             plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
             plt.xlabel('Sub Session 1 Grade')
             plt.ylabel('Sub Session 2 Grade')
-            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2,
-                       mode="expand", borderaxespad=0.)
-            plt.savefig(img, format='png')
+            legend = plt.legend(loc='upper center',
+                                bbox_to_anchor=(0.5, 1.1),
+                                ncol=2, fancybox=True, shadow=True)
+            plt.tight_layout()
+            plt.savefig(img, bbox_extra_artists=(legend,),
+                        bbox_inches='tight', format='png')
             img.seek(0)
             plot_url = base64.b64encode(img.getvalue()).decode()
 
@@ -1371,9 +1374,12 @@ def yearfeedback(username):
         plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
         plt.xlabel('Sub Session 1 Grade')
         plt.ylabel('Sub Session 2 Grade')
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2,
-                   mode="expand", borderaxespad=0.)
-        plt.savefig(img, format='png')
+        legend = plt.legend(loc='upper center',
+                            bbox_to_anchor=(0.5, 1.1),
+                            ncol=2, fancybox=True, shadow=True)
+        plt.tight_layout()
+        plt.savefig(img, bbox_extra_artists=(legend,),
+                    bbox_inches='tight', format='png')
         img.seek(0)
         plot_url = base64.b64encode(img.getvalue()).decode()
 
@@ -1458,6 +1464,21 @@ def yearfeedback(username):
         clf.fit(x_training, y_training)
         bayes_prediction = (clf.predict(x_test)[0])
 
+        if abs(gradetocgs(coursework_average) - gradetocgs(
+                written_exam_average)) < 3:
+            type_message = "There is no clear difference between your exam " \
+                           "and coursework grades, you should continue to " \
+                           "spend equal amount of time on each type of assessment."
+        elif gradetocgs(coursework_average) - gradetocgs(
+                written_exam_average) >= 3:
+            type_message = "Your coursework grades are much higher than your" \
+                           " exam grades, you should spend more time revising" \
+                           " the course material throughout the term to prepare for the exam."
+        else:
+            type_message = "Your exam grades are much higher than your " \
+                           "coursework grades, you should spend more time " \
+                           "working on your coursework in future to improve your grades."
+
         return render_template('yearfeedback.html', title='Year 1 Feedback',
                                sub_session2_grade=gradebandcheck(
                                    sub_session2_grade),
@@ -1467,7 +1488,8 @@ def yearfeedback(username):
                                sub_session2_rank=sub_session2_rank,
                                prediction=bayes_prediction,
                                written_exam_average=written_exam_average,
-                               coursework_average=coursework_average)
+                               coursework_average=coursework_average,
+                               type_message=type_message)
 
 
 @app.route('/addstudent', methods=['GET', 'POST'])
