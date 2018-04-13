@@ -9,6 +9,7 @@ def admincheck(user):
         redirect(url_for('home'))
 
 
+# Takes a floating point grade and converts it to it's grade band equivalent.
 def gradebandcheck(grade):
     grade = round(grade, 1)
     if 21.5 <= grade <= 22.0:
@@ -59,6 +60,7 @@ def gradebandcheck(grade):
         return 'G3'
 
 
+# Takes a total GPA score and returns the degree classification for that score.
 def degreeclassification(grade):
     grade = round(grade, 1)
     if 18.0 <= grade <= 22.0:
@@ -81,10 +83,12 @@ def degreeclassification(grade):
         return 'Fail'
 
 
+# Calculates GPA for an individual course
 def calculategpa(grade, course_credits, total_credits):
     return grade * course_credits / total_credits
 
 
+# Takes a lettered grade and converts it to it's numerical equivalent.
 def gradetocgs(grade):
     if grade == 'A1':
         return 22
@@ -134,6 +138,7 @@ def gradetocgs(grade):
         return 0
 
 
+# Takes a floating point grade and converts it to it's percentage equivalent
 def gradetopercentage(grade):
     if 21.5 <= grade <= 22.0:
         return 1
@@ -182,6 +187,8 @@ def gradetopercentage(grade):
     else:
         return 0.05
 
+
+# ----------Functions below for testing machine learning algorithms----------
 def testbayes(all_student_level1_results, level2grades, clf):
     y_training = []
     y_test = []

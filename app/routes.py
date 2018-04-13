@@ -1216,7 +1216,7 @@ def yearfeedback(username):
     else:
         class_session1_grades = pd.DataFrame(columns=['id', 'grade'])
         class_session2_grades = pd.DataFrame(columns=['id', 'grade'])
-        # ADD CHECK TO SQL SO IT RETRIEVES SUBMITTED VALUES THAT ARE NOT NULL
+
         student_year_results = pd.read_sql(
             'SELECT course.course_name as course_name, credits, sub_session, '
             'sum(contribution * cgs) as course_grade '

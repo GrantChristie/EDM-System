@@ -2,6 +2,7 @@ from app import db, login
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import UserMixin
 
+# Model for programme - course association table
 programme_courses = db.Table('programme_courses',
                              db.Column("id", db.Integer,
                                        primary_key=True,
@@ -14,6 +15,7 @@ programme_courses = db.Table('programme_courses',
                                        db.ForeignKey("course.id"))
                              )
 
+# Model for student - formative assessment association table
 student_formative_assessments = db.Table('student_formative_assessments',
                                          db.Column("id", db.Integer,
                                                    primary_key=True,
@@ -27,6 +29,7 @@ student_formative_assessments = db.Table('student_formative_assessments',
                                          db.Column('submitted', db.Date)
                                          )
 
+# Model for student - summative assessment association table
 student_summative_assessments = db.Table('student_summative_assessments',
                                          db.Column("id", db.Integer,
                                                    primary_key=True,
@@ -40,7 +43,7 @@ student_summative_assessments = db.Table('student_summative_assessments',
                                          db.Column('submitted', db.Date)
                                          )
 
-
+# Model for student table
 class Student(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -64,7 +67,7 @@ class Student(UserMixin, db.Model):
                                                     )
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return '<Student {}>'.format(self.username)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -73,6 +76,7 @@ class Student(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+# Model for programme table
 class Programme(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     programme_name = db.Column(db.String(40), unique=True)
@@ -87,6 +91,7 @@ class Programme(db.Model):
         return '<Programme {}>'.format(self.programme_name)
 
 
+# Model for course table
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     course_name = db.Column(db.String(128))
@@ -104,6 +109,7 @@ class Course(db.Model):
         return '<Course {}>'.format(self.course_name)
 
 
+# Model for summative assessment table
 class SummativeAssessment(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40))
@@ -119,6 +125,7 @@ class SummativeAssessment(db.Model):
         return '<Summative Assessment {}>'.format(self.name)
 
 
+# Model for formative assessment table
 class FormativeAssessment(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(40))
