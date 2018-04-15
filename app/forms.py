@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, FloatField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, \
+    FloatField
 from wtforms.validators import DataRequired, NumberRange, Optional
 from wtforms.fields.html5 import DateField, IntegerField
 import datetime
@@ -20,6 +21,8 @@ class AddStudent(FlaskForm):
     l_name = StringField('Last Name', validators=[DataRequired()])
     dob = DateField('Date of Birth', validators=[DataRequired()])
     year = IntegerField('Student Year', validators=[DataRequired()], default=1)
+    attendance = FloatField('Attendance', validators=[DataRequired()],
+                            default=1)
     programme_id = SelectField('Programme', coerce=int)
     submit = SubmitField('Add')
 
@@ -58,6 +61,16 @@ class AddSummativeAssessment(FlaskForm):
     contribution = FloatField('Grade Contribution',
                               validators=[DataRequired()],
                               default=0.75)
+    academic_excellence = SelectField('Academic Excellence',
+                                       choices=[(1, '1'), (0, '0')],
+                                       coerce=int)
+    active_citizenship = SelectField('Active Citizenship',
+                                      choices=[(1, '1'), (0, '0')], coerce=int)
+    critical_thinking = SelectField('Critical Thinking',
+                                     choices=[(1, '1'), (0, '0')], coerce=int)
+    learning_personal_development = SelectField(
+        'Learning and Personal Development', choices=[(1, '1'), (0, '0')],
+        coerce=int)
     course_id = SelectField('Course', coerce=int)
     submit = SubmitField('Add')
 

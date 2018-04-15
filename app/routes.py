@@ -1507,7 +1507,8 @@ def addstudent():
                           l_name=form.l_name.data,
                           dob=form.dob.data,
                           programme_id=form.programme_id.data,
-                          year=form.year.data)
+                          year=form.year.data,
+                          attendance=form.attendance.data)
         student.set_password(form.password.data)
         db.session.add(student)
         db.session.commit()
@@ -1582,7 +1583,11 @@ def addsummativeassessment():
         summativeassessment = SummativeAssessment(name=form.name.data,
                                                   due_date=form.due_date.data,
                                                   contribution=form.contribution.data,
-                                                  course_id=form.course_id.data)
+                                                  course_id=form.course_id.data,
+                                                  academic_excellence=form.academic_excellence.data,
+                                                  active_citizenship=form.active_citizenship.data,
+                                                  critical_thinking=form.critical_thinking.data,
+                                                  learning_personal_development=form.learning_personal_development.data)
         db.session.add(summativeassessment)
         db.session.commit()
         flash('Summative Assessment Added')
