@@ -189,7 +189,8 @@ def details(username):
     # Get the logged in student's personal details
     details = \
         pd.read_sql(
-            'select student.username, student.f_name, student.l_name, student.dob, student.year, programme.programme_name '
+            'select student.username, student.f_name, student.l_name, '
+            'student.dob, student.year, programme.programme_name, student.attendance*100 as attendance '
             'from "student" '
             'INNER JOIN programme '
             'ON student.programme_id = programme.id '
@@ -568,7 +569,7 @@ def programmefeedback(username):
         total_level2_credits = level_2_scores['credits'].sum()
         student_l2_results = []
 
-        # For each course grade and credit pair, calculate teh GPA for that student's course and add it to a list
+        # For each course grade and credit pair, calculate the GPA for that student's course and add it to a list
         for course_credits, grade in zip(level_2_scores['credits'].values,
                                          level_2_scores[
                                              'course_grade'].values):
@@ -606,8 +607,7 @@ def programmefeedback(username):
 
         # Create a dictionary to store the total percentages of each graduate attribute for easy display on web page
         graduate_attributes = {'Academic Excellence': round(
-            sum(academic_excellence_score) / len(academic_excellence_score),
-            2) * 100, 'Critical Thinking': round(
+            sum(academic_excellence_score) / len(academic_excellence_score), 2) * 100,'Critical Thinking': round(
             sum(critical_thinking_score) / len(critical_thinking_score),
             2) * 100, 'Learning & Personal Development': round(
             sum(learning_personal_development_score) / len(
@@ -741,8 +741,8 @@ def programmefeedback(username):
 
         # If the student did not have perfect attendance, make a new prediction where their attendance is now 100%
 
-        # Regression version
-        """if student.attendance != 1:
+        """# Regression version
+        if student.attendance != 1:
             student_l1_results[-1] = 1
             perfect_attendance_x_test = np.array([student_l1_results])
             perfect_attendance_prediction = lin.predict([perfect_attendance_x_test[0]])
