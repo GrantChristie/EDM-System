@@ -23,7 +23,6 @@ import io
 import base64
 import matplotlib
 import bisect
-
 # For Heroku deployment, matplotlib must be imported in this way.
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -36,10 +35,8 @@ ordinal = lambda n: "%d%s" % \
 
 # Time variable is set to the current time for normal use
 time = datetime.datetime.now()
-
-
 # Can be set to other dates for testing
-#time = datetime.datetime(2014, 11, 20)
+# time = datetime.datetime(2014, 11, 30)
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods=['GET', 'POST'])
@@ -420,11 +417,11 @@ def programmefeedback(username):
         return redirect(url_for('home'))
     else:
         student_id = str(student.id)
-        student_list = pd.read_sql(
+        """student_list = pd.read_sql(
             "SELECT id, attendance FROM student where username <> 'admin' and username <> '" + student.username + "' and year = " + str(
                 current_user.year) + 'and programme_id =' + str(
-                current_user.programme_id), db.engine)
-
+                current_user.programme_id), db.engine)"""
+        student_list = pd.read_sql("SELECT id, attendance FROM student where id in (2,3,4,5)", db.engine)
         level1grades = []
         level2grades = []
         all_student_level1_results = []
@@ -685,7 +682,7 @@ def programmefeedback(username):
         lin = linear_model.LinearRegression()
         lin.fit(x_training, y_training)
         predictedl2 = gradebandcheck(lin.predict(x_test)[0])
-        testlinearregression(lin, all_student_level1_results, level2grades)
+        #testlinearregression(lin, all_student_level1_results, level2grades)
         # linear regression end
 
         # bayes start
@@ -697,7 +694,7 @@ def programmefeedback(username):
         x_test = np.array([student_l1_results])
         bayes.fit(x_training, y_training)
         bayes_predictedl2 = (bayes.predict(x_test)[0])
-        testbayes(all_student_level1_results, level2grades, bayes)
+        #testbayes(all_student_level1_results, level2grades, bayes)
 
         # bayes end
 
@@ -714,9 +711,9 @@ def programmefeedback(username):
 
         level1grade = gradebandcheck(level1grade)
         level2grade = gradebandcheck(level2grade)
-        if predictedl2 > level2grade:
+        if bayes_predictedl2 > level2grade:
             predicted_text = "You did better than predicted, well done!"
-        elif predictedl2 < level2grade:
+        elif bayes_predictedl2 < level2grade:
             predicted_text = "You did worse than predicted."
         else:
             predicted_text = "You performed as predicted."
@@ -737,7 +734,7 @@ def programmefeedback(username):
                 [[max(level1grades), min(level2grades)]]):
             feedback = "You performed well in year 1 but your results have gotten worse compared to your peers."
         else:
-            feedback = "You are performing averagely compared to your peers"
+            feedback = "You are performing averagely compared to your peers."
 
         # If the student did not have perfect attendance, make a new prediction where their attendance is now 100%
 

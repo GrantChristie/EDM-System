@@ -5,10 +5,11 @@
     <p><img src="data:image/png;base64, {{ plot_url }}"></p>
     <h4><b>General Feedback</b></h4>
     Your Level 1 Grade is: {{ level1grade }}<br>
+    Your Level 2 Grade is: {{ level2grade }}<br>
     {{ feedback }}<br>
     <h4><b>Predictions</b></h4>
     <h5><b>Most Accurate Predictor</b></h5>
-    Your Bayes Predicted Level 2 Grade is {{ bayes_predictedl2 }}<br>
+    Your Naive Bayes Predicted Level 2 Grade is {{ bayes_predictedl2 }}<br>
     {{ predicted_text }}<br>
     {% if perfect_attendance_prediction != "" %}
         If you had perfect attendance your predicted grade would have been
@@ -17,10 +18,9 @@
         attendance, well done!
     {% endif %}
     <h5><b>Other predictor's results</b></h5>
-    Your Regression Predicted Level 2 Grade is {{ predictedl2 }}<br>
+    Your Linear Regression Predicted Level 2 Grade is {{ predictedl2 }}<br>
     Your Decision Tree Predicted Level 2 Grade is
     {{ decision_tree_prediction }}<br>
-    Your Level 2 Grade is: {{ level2grade }}<br>
     <h4><b>Mock Honours Classification</b></h4>
     If these two years were your honours years you would have the following
     final grade degree classification:
