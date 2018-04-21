@@ -417,11 +417,12 @@ def programmefeedback(username):
         return redirect(url_for('home'))
     else:
         student_id = str(student.id)
-        """student_list = pd.read_sql(
+        student_list = pd.read_sql(
             "SELECT id, attendance FROM student where username <> 'admin' and username <> '" + student.username + "' and year = " + str(
                 current_user.year) + 'and programme_id =' + str(
-                current_user.programme_id), db.engine)"""
-        student_list = pd.read_sql("SELECT id, attendance FROM student where id in (2,3,4,5,8,9,10,14,15,16,17,18,19,20)", db.engine)
+                current_user.programme_id), db.engine)
+        # Use the below line to manually set which users you want to be analysed.
+        # student_list = pd.read_sql("SELECT id, attendance FROM student where id in (2,3,4,5,8,9,10,14,15,16,17,18,19,20)", db.engine)
         level1grades = []
         level2grades = []
         all_student_level1_results = []
