@@ -421,7 +421,7 @@ def programmefeedback(username):
             "SELECT id, attendance FROM student where username <> 'admin' and username <> '" + student.username + "' and year = " + str(
                 current_user.year) + 'and programme_id =' + str(
                 current_user.programme_id), db.engine)"""
-        student_list = pd.read_sql("SELECT id, attendance FROM student where id in (2,3,4,5)", db.engine)
+        student_list = pd.read_sql("SELECT id, attendance FROM student where id in (2,3,4,5,8,9,10,14,15)", db.engine)
         level1grades = []
         level2grades = []
         all_student_level1_results = []
