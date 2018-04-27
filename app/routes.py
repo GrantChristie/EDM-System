@@ -604,15 +604,14 @@ def programmefeedback(username):
             level2_learning_personal_development))
 
         # Create a dictionary to store the total percentages of each graduate attribute for easy display on web page
-        graduate_attributes = {'Academic Excellence': round(
-            sum(academic_excellence_score) / len(academic_excellence_score), 2) * 100,'Critical Thinking': round(
-            sum(critical_thinking_score) / len(critical_thinking_score),
-            2) * 100, 'Learning & Personal Development': round(
-            sum(learning_personal_development_score) / len(
-                learning_personal_development_score), 2) * 100,
-                               'Active Citizenship': round(
-                                   sum(active_citizenship_score) / len(
-                                       active_citizenship_score), 2) * 100}
+        graduate_attributes = {'Academic Excellence': "%.0f" % (round(
+            sum(academic_excellence_score) / len(academic_excellence_score), 2) * 100),
+                               'Critical Thinking': "%.0f" % (round(
+            sum(critical_thinking_score) / len(critical_thinking_score),2) * 100),
+                               'Learning & Personal Development': "%.0f" % (round(
+            sum(learning_personal_development_score) / len(learning_personal_development_score), 2) * 100),
+                               'Active Citizenship': "%.0f" % (round(
+                                   sum(active_citizenship_score) / len(active_citizenship_score), 2) * 100)}
 
         level2grade = sum(student_l2_results)
 
@@ -682,7 +681,7 @@ def programmefeedback(username):
         x_test = np.array([student_l1_results])
         lin = linear_model.LinearRegression()
         lin.fit(x_training, y_training)
-        predictedl2 = gradebandcheck(lin.predict(x_test)[0])
+        regression_prediction = gradebandcheck(lin.predict(x_test)[0])
         #testlinearregression(lin, all_student_level1_results, level2grades)
         # linear regression end
 
@@ -760,7 +759,8 @@ def programmefeedback(username):
                                title='Programme Feedback', plot_url=plot_url,
                                level1grade=level1grade,level2grade=level2grade,
                                mock_honours_grade=mock_honours_grade,
-                               feedback=feedback, predictedl2=predictedl2,
+                               feedback=feedback,
+                               regression_prediction=regression_prediction,
                                predicted_text=predicted_text,
                                bayes_predictedl2=bayes_predictedl2,
                                decision_tree_prediction=decision_tree_prediction,
@@ -1140,23 +1140,52 @@ def yearfeedback(username):
                 kmeans = KMeans(n_clusters=len(class_session1_grades)).fit(x)
             else:
                 kmeans = KMeans(n_clusters=5).fit(x)
+                color = ['red' if x == kmeans.predict(
+                    [[min(class_session1_grades['grade'].values),
+                      min(class_session2_grades['grade'].values)]])
+                         else 'green' if x == kmeans.predict(
+                    [[max(class_session1_grades['grade'].values),
+                      max(class_session2_grades['grade'].values)]])
+                else 'orange' if x == kmeans.predict(
+                    [[min(class_session1_grades['grade'].values),
+                      max(class_session2_grades['grade'].values)]])
+                else 'pink' if x == kmeans.predict(
+                    [[max(class_session1_grades['grade'].values),
+                      min(class_session2_grades['grade'].values)]])
+                else 'blue' for x in kmeans.labels_]
+                outline_a = mpatches.Patch(color='pink',
+                                           label='Good level 1 Poor Level 2 Group')
+                average = mpatches.Patch(color='blue', label='Average Group')
+                top = mpatches.Patch(color='green', label='Top Group')
+                outline_b = mpatches.Patch(color='orange',
+                                           label='Poor level 1 Good Level 2 Group')
+                bottom = mpatches.Patch(color='red', label='Bottom Group')
+            you_patch = mpatches.Patch(color='black', label='You')
 
             # Plot the graph of session 1 grades against session 2 grades
             img = io.BytesIO()
             plt.clf()
-            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+            if len(class_session1_grades) < 5:
+                plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+                handles = [you_patch]
+            else:
+                plt.scatter(x[:, 0], x[:, 1], c=color)
+                handles = [you_patch, top, average, bottom, outline_a,
+                           outline_b]
             plt.scatter(kmeans.cluster_centers_[:, 0],
                         kmeans.cluster_centers_[:, 1], color='black',
                         marker='+')  # MAYBE REMOVE IN FINAL VERSION
-            plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',
+            plt.plot(sub_session1_grade, sub_session2_grade, 'ko',
                      markersize=7)
+
             plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
             plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
             plt.xlabel('Sub Session 1 Grade')
             plt.ylabel('Sub Session 2 Grade')
             legend = plt.legend(loc='upper center',
-                                bbox_to_anchor=(0.5, 1.1),
-                                ncol=2, fancybox=True, shadow=True)
+                                bbox_to_anchor=(0.5, 1.20),
+                                ncol=2, fancybox=True, shadow=True,
+                                handles=handles)
             plt.tight_layout()
             plt.savefig(img, bbox_extra_artists=(legend,),
                         bbox_inches='tight', format='png')
@@ -1360,21 +1389,50 @@ def yearfeedback(username):
             kmeans = KMeans(n_clusters=len(class_session1_grades)).fit(x)
         else:
             kmeans = KMeans(n_clusters=5).fit(x)
+            color = ['red' if x == kmeans.predict(
+                [[min(class_session1_grades['grade'].values),
+                  min(class_session2_grades['grade'].values)]])
+                     else 'green' if x == kmeans.predict(
+                [[max(class_session1_grades['grade'].values),
+                  max(class_session2_grades['grade'].values)]])
+            else 'orange' if x == kmeans.predict(
+                [[min(class_session1_grades['grade'].values),
+                  max(class_session2_grades['grade'].values)]])
+            else 'pink' if x == kmeans.predict(
+                [[max(class_session1_grades['grade'].values),
+                  min(class_session2_grades['grade'].values)]])
+            else 'blue' for x in kmeans.labels_]
+            outline_a = mpatches.Patch(color='pink',
+                                       label='Good level 1 Poor Level 2 Group')
+            average = mpatches.Patch(color='blue', label='Average Group')
+            top = mpatches.Patch(color='green', label='Top Group')
+            outline_b = mpatches.Patch(color='orange',
+                                       label='Poor level 1 Good Level 2 Group')
+            bottom = mpatches.Patch(color='red', label='Bottom Group')
+        you_patch = mpatches.Patch(color='black', label='You')
+
+        # Plot the graph of session 1 grades against session 2 grades
         img = io.BytesIO()
         plt.clf()
-        plt.plot(sub_session1_grade, sub_session2_grade, 'ko', label='You',
-                 markersize=7)
-        plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+        if len(class_session1_grades) < 5:
+            plt.scatter(x[:, 0], x[:, 1], c=kmeans.labels_, cmap='rainbow')
+            handles = [you_patch]
+        else:
+            plt.scatter(x[:, 0], x[:, 1], c=color)
+            handles = [you_patch, top, average, bottom, outline_a, outline_b]
         plt.scatter(kmeans.cluster_centers_[:, 0],
                     kmeans.cluster_centers_[:, 1], color='black',
                     marker='+')  # MAYBE REMOVE IN FINAL VERSION
+        plt.plot(sub_session1_grade, sub_session2_grade, 'ko', markersize=7)
+
         plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
         plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
         plt.xlabel('Sub Session 1 Grade')
         plt.ylabel('Sub Session 2 Grade')
         legend = plt.legend(loc='upper center',
-                            bbox_to_anchor=(0.5, 1.1),
-                            ncol=2, fancybox=True, shadow=True)
+                            bbox_to_anchor=(0.5, 1.20),
+                            ncol=2, fancybox=True, shadow=True,
+                            handles=handles)
         plt.tight_layout()
         plt.savefig(img, bbox_extra_artists=(legend,),
                     bbox_inches='tight', format='png')
