@@ -643,9 +643,9 @@ def programmefeedback(username):
         img = io.BytesIO()
         plt.clf()
         plt.scatter(x[:, 0], x[:, 1], c=color)
-        plt.scatter(kmeans.cluster_centers_[:, 0],
+        group_center = plt.scatter(kmeans.cluster_centers_[:, 0],
                     kmeans.cluster_centers_[:, 1], color='black',
-                    marker='+')  # MAYBE REMOVE IN FINAL VERSION
+                    marker='+', label="Group Centre Points")
         plt.plot(sum(student_l1_results), sum(student_l2_results), 'ko', markersize=7)
 
         # Create the legend handles for each cluster colour
@@ -656,11 +656,11 @@ def programmefeedback(username):
         outline_b = mpatches.Patch(color='orange', label='Poor level 1 Good Level 2 Group')
         bottom = mpatches.Patch(color='red', label='Bottom Group')
         legend = plt.legend(loc='upper center',
-                            bbox_to_anchor=(0.5, 1.20),
+                            bbox_to_anchor=(0.5, 1.25),
                             ncol=2, fancybox=True, shadow=True,
                             handles=[you_patch, top,
                                      average, bottom,
-                                     outline_a, outline_b])
+                                     outline_a, outline_b, group_center])
 
         plt.xlim(min(kmeans_l1) - 1, 22)
         plt.ylim(min(kmeans_l2) - 1, 22)
@@ -1172,18 +1172,18 @@ def yearfeedback(username):
                 plt.scatter(x[:, 0], x[:, 1], c=color)
                 handles = [you_patch, top, average, bottom, outline_a,
                            outline_b]
-            plt.scatter(kmeans.cluster_centers_[:, 0],
+            group_center = plt.scatter(kmeans.cluster_centers_[:, 0],
                         kmeans.cluster_centers_[:, 1], color='black',
-                        marker='+')  # MAYBE REMOVE IN FINAL VERSION
+                        marker='+', label="Group Centre Points")
             plt.plot(sub_session1_grade, sub_session2_grade, 'ko',
                      markersize=7)
-
+            handles.append(group_center)
             plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
             plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
             plt.xlabel('Sub Session 1 Grade')
             plt.ylabel('Sub Session 2 Grade')
             legend = plt.legend(loc='upper center',
-                                bbox_to_anchor=(0.5, 1.20),
+                                bbox_to_anchor=(0.5, 1.25),
                                 ncol=2, fancybox=True, shadow=True,
                                 handles=handles)
             plt.tight_layout()
@@ -1420,11 +1420,11 @@ def yearfeedback(username):
         else:
             plt.scatter(x[:, 0], x[:, 1], c=color)
             handles = [you_patch, top, average, bottom, outline_a, outline_b]
-        plt.scatter(kmeans.cluster_centers_[:, 0],
+        group_center = plt.scatter(kmeans.cluster_centers_[:, 0],
                     kmeans.cluster_centers_[:, 1], color='black',
-                    marker='+')  # MAYBE REMOVE IN FINAL VERSION
+                    marker='+', label="Group Centre Points")
         plt.plot(sub_session1_grade, sub_session2_grade, 'ko', markersize=7)
-
+        handles.append(group_center)
         plt.xlim(min(class_session1_grades['grade'].values) - 1, 22)
         plt.ylim(min(class_session2_grades['grade'].values) - 1, 22)
         plt.xlabel('Sub Session 1 Grade')
