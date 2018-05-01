@@ -43,6 +43,7 @@ student_summative_assessments = db.Table('student_summative_assessments',
                                          db.Column('submitted', db.Date)
                                          )
 
+
 # Model for student table
 class Student(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

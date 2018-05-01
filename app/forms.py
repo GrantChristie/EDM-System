@@ -20,7 +20,8 @@ class AddStudent(FlaskForm):
     f_name = StringField('First Name', validators=[DataRequired()])
     l_name = StringField('Last Name', validators=[DataRequired()])
     dob = DateField('Date of Birth', validators=[DataRequired()])
-    year = IntegerField('Student Year', validators=[DataRequired()], default=1)
+    year = IntegerField('Student Year', validators=[DataRequired()],
+                        default=1)
     attendance = FloatField('Attendance', validators=[DataRequired()],
                             default=1)
     programme_id = SelectField('Programme', coerce=int)
@@ -45,8 +46,7 @@ class AddCourse(FlaskForm):
 
 # Form displayed on /addformativeassessment
 class AddFormativeAssessment(FlaskForm):
-    name = StringField('Assessment Name',
-                       validators=[DataRequired()])
+    name = StringField('Assessment Name', validators=[DataRequired()])
     due_date = DateField('Due Date', validators=[DataRequired()],
                          default=datetime.datetime.now())
     course_id = SelectField('Course', coerce=int)
@@ -62,15 +62,17 @@ class AddSummativeAssessment(FlaskForm):
                               validators=[DataRequired()],
                               default=0.75)
     academic_excellence = SelectField('Academic Excellence',
-                                       choices=[(1, '1'), (0, '0')],
-                                       coerce=int)
+                                      choices=[(1, '1'), (0, '0')],
+                                      coerce=int)
     active_citizenship = SelectField('Active Citizenship',
-                                      choices=[(1, '1'), (0, '0')], coerce=int)
+                                     choices=[(1, '1'), (0, '0')],
+                                     coerce=int)
     critical_thinking = SelectField('Critical Thinking',
-                                     choices=[(1, '1'), (0, '0')], coerce=int)
-    learning_personal_development = SelectField(
-        'Learning and Personal Development', choices=[(1, '1'), (0, '0')],
-        coerce=int)
+                                    choices=[(1, '1'), (0, '0')],
+                                    coerce=int)
+    learning_personal_development = SelectField('Learning and Personal Development',
+                                                choices=[(1, '1'), (0, '0')],
+                                                coerce=int)
     course_id = SelectField('Course', coerce=int)
     submit = SubmitField('Add')
 

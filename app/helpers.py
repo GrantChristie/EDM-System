@@ -2,7 +2,7 @@ from flask import redirect, url_for, flash
 from sklearn.metrics import accuracy_score
 import numpy as np
 
-
+# Checks if the current logged-in user is an admin
 def admincheck(user):
     if user != 'admin':
         flash("You do not have permission to view this page")
@@ -88,7 +88,7 @@ def calculategpa(grade, course_credits, total_credits):
     return grade * course_credits / total_credits
 
 
-# Takes a lettered grade and converts it to it's numerical equivalent.
+# Takes an alphanumeric grade and converts it to it's numerical equivalent.
 def gradetocgs(grade):
     if grade == 'A1':
         return 22
@@ -188,7 +188,7 @@ def gradetopercentage(grade):
         return 0.05
 
 
-# ----------Functions below for testing machine learning algorithms----------
+# ---------------Functions below for testing algorithms---------------
 def testbayes(all_student_level1_results, level2grades, clf):
     y_training = []
     y_test = []
